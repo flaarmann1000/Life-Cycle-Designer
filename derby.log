@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Sat Apr 25 12:33:29 CEST 2020:
+Booten von Derby-Version The Apache Software Foundation - Apache Derby - 10.14.2.0 - (1828579): Instanz a816c00e-0171-b0e6-35c6-00000457ac88
+für Datenbankverzeichnis D:\studium\TUM\BA\CE\data_handling\matlab_lca\matlab_zolca\db\EF_secondarydata_201908 mit Class Loader sun.misc.Launcher$AppClassLoader@c387f44
+Geladen aus file:/D:/studium/TUM/BA/CE/data_handling/matlab_lca/matlab_zolca/derby/db-derby-10.14.2.0-bin/lib/derby.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_181-b13
+user.dir=C:\Users\Z420\Documents\MATLAB
+os.name=Windows 10
+os.arch=amd64
+os.version=10.0
+derby.system.home=null
+Datenbank-Class Loader wurde gestartet - derby.database.classpath=''
