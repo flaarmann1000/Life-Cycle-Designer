@@ -12,6 +12,7 @@ classdef Component
         material string
         %mass double
         volume double
+        modelGraph = digraph()
     end
     
     methods
@@ -23,6 +24,10 @@ classdef Component
             %obj.componentType = componentType;                    
             obj.stageNames = ["material","production","assembly","distribution","use","disposal","maintenance","refurbishment","remanufacturing","recycling"];
             obj.stageTypes = ["closed loop mix","alu die casting","screw","transportation","no consumption","landfill","reassembly","cleaning","surface finish","closed loop"];
+                      
+            EL = [1 2;2 3;3 4;4 5;5 6;5 7;5 8;5 9;5 10;7 5;8 4;9 3;10 2];            
+            g = digraph(EL(:,1),EL(:,2));            
+            obj.modelGraph = g;  
             
             for i = 1:length(obj.stageNames)
                 obj.stages(i) = Stage(obj.stageNames(i));
@@ -40,6 +45,8 @@ classdef Component
             %set(h,'hittest','off'); % so you can click on the Markers            
             set(h,'ButtonDownFcn',@app.getCoord); % Defining what happens when clicking
             %uiwait(h) %so multiple clicks can be used               
+            %resetplotview(h,'InitializeCurrentView');
+            resetplotview(app.UIAxes);
         end     
     end
 end

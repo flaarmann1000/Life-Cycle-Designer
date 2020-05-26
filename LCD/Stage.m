@@ -17,7 +17,7 @@ classdef Stage < matlab.mixin.Heterogeneous
             obj.name = name;   
             %if (name == "production")
                 obj.processList = ["semi production","transport","primary shaping","reshaping","cutting","joining","change properties", "surface finish"];
-                obj.processTypes = ["briquett production","internal","aluminium die cast","none","machining","none","none","polishment"];
+                obj.processTypes = ["briquett production","internal","casting, aluminium, lost-wax","none","machining","none","none","polishment"];
             %end
         end   
         
