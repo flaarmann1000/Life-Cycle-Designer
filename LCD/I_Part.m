@@ -18,7 +18,21 @@ classdef I_Part
             obj.volume = volume;
             obj.material = material;
             obj.mass = mass;
-        end                
+        end
+        function nChildren = getChildrenCount(obj)
+           nChildren = 0;
+           Iterate(obj);
+           
+            function Iterate(o)
+                for i = 1:length(o.solids)
+                    nChildren = nChildren + 1; 
+                end
+                for i = 1:length(o.parts)
+                    %nChildren = nChildren +1;
+                    Iterate(o.parts(i));
+                end
+            end
+        end
     end
 end
 
