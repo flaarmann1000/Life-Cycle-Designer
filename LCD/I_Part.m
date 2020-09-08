@@ -9,6 +9,7 @@ classdef I_Part
         solids I_Solid
         features I_Feature
         parts I_Part
+        joints I_Joint
     end
     
     methods
@@ -19,16 +20,17 @@ classdef I_Part
             obj.material = material;
             obj.mass = mass;
         end
-        function nChildren = getChildrenCount(obj)
-           nChildren = 0;
+        
+        function [nChildren, solid] = getChildrenCount(obj)
+           nChildren = 0;          
            Iterate(obj);
            
             function Iterate(o)
                 for i = 1:length(o.solids)
                     nChildren = nChildren + 1; 
+                    solid = o.solids(i);
                 end
                 for i = 1:length(o.parts)
-                    %nChildren = nChildren +1;
                     Iterate(o.parts(i));
                 end
             end

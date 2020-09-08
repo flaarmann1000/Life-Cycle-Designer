@@ -1,10 +1,9 @@
 function Asm = struct2I_Assembly(struct)            
 %Converts Struct to I_Assembly object
 name = struct.assembly.Attributes.name;
-material = struct.assembly.Attributes.material;
 mass = str2double(struct.assembly.Attributes.mass);
 volume = str2double(struct.assembly.Attributes.volume);
-Asm = I_Assembly(name, volume, material, mass);
+Asm = I_Assembly(name, volume, mass);
 
 Asm = Iterate(struct.assembly, Asm);
 
@@ -15,15 +14,23 @@ function root = Iterate(struct, root)
                 for i = 1: length(struct.solid)
                     if length(struct.solid) == 1     
                         name = struct.solid.Attributes.name;
-                        volume = str2double(struct.solid.Attributes.volume);
-                        material = struct.solid.Attributes.material;                        
-                        solid = I_Solid(name,volume,material);
+                        volume = struct.solid.Attributes.volume;
+                        material = struct.solid.Attributes.appearance;   
+                        mass = struct.solid.Attributes.mass;
+                        density = struct.solid.Attributes.density;
+                        boundingBox = [str2double(struct.solid.Attributes.BoundingBoxX) str2double(struct.solid.Attributes.BoundingBoxY) str2double(struct.solid.Attributes.BoundingBoxZ)];
+                        surface = struct.solid.Attributes.surface;
+                        solid = I_Solid(name,volume,material,mass,density,boundingBox,surface);
                         solid = Iterate(struct.solid, solid);
                     else
                         name = struct.solid{i}.Attributes.name;
-                        volume = str2double(struct.solid{i}.Attributes.volume);
-                        material = struct.solid{i}.Attributes.material;                        
-                        solid = I_Solid(name,volume,material);
+                        volume = struct.solid{i}.Attributes.volume;
+                        material = struct.solid{i}.Attributes.appearance;                        
+                        mass = struct.solid{i}.Attributes.mass;
+                        density = struct.solid{i}.Attributes.density;
+                        boundingBox = [str2double(struct.solid{i}.Attributes.BoundingBoxX) str2double(struct.solid{i}.Attributes.BoundingBoxY) str2double(struct.solid{i}.Attributes.BoundingBoxZ)];
+                        surface = struct.solid{i}.Attributes.surface;
+                        solid = I_Solid(name,volume,material,mass,density,boundingBox,surface);
                         solid = Iterate(struct.solid{i}, solid);
                     end                    
                     root.solids(length(root.solids)+1) = solid;
@@ -34,14 +41,16 @@ function root = Iterate(struct, root)
                     if length(struct.part) == 1
                         name = struct.part.Attributes.name;
                         volume = str2double(struct.part.Attributes.volume);
-                        material = struct.part.Attributes.material;
+                        %material = struct.part.Attributes.appearance;
+                        material = 'PART';
                         mass = str2double(struct.part.Attributes.mass);                        
                         part = I_Part(name,volume,material,mass);
                         part = Iterate(struct.part, part);
                     else
                         name = struct.part{i}.Attributes.name;
                         volume = str2double(struct.part{i}.Attributes.volume);
-                        material = struct.part{i}.Attributes.material;
+                        %material = struct.part{i}.Attributes.appearance;
+                        material = 'PART';
                         mass = str2double(struct.part{i}.Attributes.mass);     
                         part = I_Part(name,volume,material,mass);
                         part = Iterate(struct.part{i}, part);
@@ -100,19 +109,94 @@ function root = Iterate(struct, root)
                 end    
             end
             if isfield(struct,"feature")
+                flag = false;
                 for i = 1: length(struct.feature)
                     if length(struct.feature) == 1
-                        name = struct.feature.Attributes.name;
-                        baseFeature = struct.feature.Attributes.baseFeature;
+                        name = struct.feature.Attributes.name;                        
                         objectType = struct.feature.Attributes.objectType;
-                        featureDef = struct.feature.featureDef;
+                        if isfield(struct.feature,"featureDef")
+                            featureDef = struct.feature.featureDef;
+                        else
+                            featureDef = '';
+                        end
+                        if isfield(struct.feature,"body")
+                            bodies = strings(0);
+                            for k = 1: length(struct.feature.body)
+                                if length(struct.feature.body) == 1
+                                    bname = struct.feature.body.Attributes.name;                                                                     
+                                else
+                                    bname = struct.feature.body{k}.Attributes.name;
+                                end
+                                bodies = [bodies, bname];
+                                flag = true;
+                            end                               
+                        end
                     else
-                        name = struct.feature{i}.Attributes.name;
-                        baseFeature = struct.feature{i}.Attributes.baseFeature;
+                        name = struct.feature{i}.Attributes.name;                        
                         objectType = struct.feature{i}.Attributes.objectType;
-                        featureDef = struct.feature{i}.featureDef;
+                        if isfield(struct.feature{i},"featureDef")
+                            featureDef = struct.feature{i}.featureDef;
+                        else
+                            featureDef = '';
+                        end
+                        if isfield(struct.feature{i},"body")
+                            bodies = strings(0);
+                            for k = 1: length(struct.feature{i}.body)
+                                if length(struct.feature{i}.body) == 1
+                                    bname = struct.feature{i}.body.Attributes.name;                                                                        
+                                else
+                                    bname = struct.feature{i}.body{k}.Attributes.name;                                                                        
+                                end
+                                bodies = [bodies, bname];
+                                flag = true;
+                            end                             
+                        end                        
                     end      
-                    root.features(length(root.features)+1) = I_Feature(name,baseFeature,objectType,featureDef);
+                    if flag
+                        root.features(length(root.features)+1) = I_Feature(name,objectType,featureDef,bodies);
+                    end
                 end    
-            end                                  
+            end       
+            if isfield(struct,"joint")               
+                for i = 1: length(struct.joint)
+                    if length(struct.joint) == 1     
+                        name = struct.joint.Attributes.name;
+                        body1= struct.joint.Attributes.body1;
+                        body2= struct.joint.Attributes.body2;
+                        occ1= struct.joint.Attributes.occ1;
+                        occ2= struct.joint.Attributes.occ2;
+                        area1= struct.joint.Attributes.area1;
+                        area2= struct.joint.Attributes.area2;
+                        outline1= struct.joint.Attributes.outline1;
+                        outline2= struct.joint.Attributes.outline2;
+                        jointStruct = struct.joint;
+                    else
+                        name = struct.joint{i}.Attributes.name;
+                        body1= struct.joint{i}.Attributes.body1;
+                        body2= struct.joint{i}.Attributes.body2;
+                        occ1= struct.joint{i}.Attributes.occ1;
+                        occ2= struct.joint{i}.Attributes.occ2;  
+                        area1= struct.joint{i}.Attributes.area1;
+                        area2= struct.joint{i}.Attributes.area2;
+                        outline1= struct.joint{i}.Attributes.outline1;
+                        outline2= struct.joint{i}.Attributes.outline2;
+                        jointStruct = struct.joint{i};
+                    end 
+                    joint = I_Joint(name,body1,occ1,area1,outline1,body2,occ2,area2,outline2);
+                    root.joints(length(root.joints)+1) = joint;
+                    if isfield(jointStruct,"screw")    
+                        for e = 1: length(jointStruct.screw)
+                            if length(jointStruct.screw) == 1 
+                                name = jointStruct.screw.Attributes.name;
+                                mass = jointStruct.screw.Attributes.mass;
+                            else
+                                name = jointStruct.screw{e}.Attributes.name;
+                                mass = jointStruct.screw{e}.Attributes.mass;
+                            end
+                            screw = I_Screw(name,mass);
+                            root.joints(end).screws = [root.joints(end).screws, screw];
+                        end
+                    end
+                end            
+            end
         end

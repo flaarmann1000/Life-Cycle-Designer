@@ -4,20 +4,19 @@ classdef I_Assembly
     
     properties
         name string
-        volume double
-        material string
+        volume double        
         mass double
         parts I_Part
         solids I_Solid
         CAM I_CAM
         features I_Feature
+        joints I_Joint
     end
     
     methods
-        function obj = I_Assembly(name,volume, material, mass)            
+        function obj = I_Assembly(name,volume, mass)            
             obj.name = name;
-            obj.volume = volume;
-            obj.material = material;
+            obj.volume = volume;            
             obj.mass = mass;
         end
         

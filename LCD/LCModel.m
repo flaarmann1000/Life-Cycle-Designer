@@ -21,7 +21,7 @@ classdef LCModel
         end
         
         function obj = displayLCModel(obj,app)
-            obj.stageNames = ["material","production","assembly","distribution","use","disposal","maintenance","refurbishment","remanufacturing","recycling"];
+            obj.stageNames = ["material","production","connection","distribution","use","disposal","maintenance","refurbishment","remanufacturing","recycling"];
             XData = [20,40,60,80,100,120,100,80,60,40];
             YData = [20,20,20,20, 20, 20, 40,40,40,40];
             NodeColors = [247 182 137;247 182 137;247 182 137;247 182 137; 105 176 226; 244 136 136;231 193 146;211 200 154;189 205 161;161 208 168]/255;
@@ -35,6 +35,24 @@ classdef LCModel
             %uiwait(h) %so multiple clicks can be used       
             resetplotview(app.UIAxes);
         end        
+        
+        function obj = updateElement(obj, element)                                    
+            obj.assemblies = ifind(obj.assemblies, element.name);
+            
+            function asm = ifind(asm, name)
+                for i = 1:length(asm.components)
+                   if(asm.components(i).name == name)
+                       asm.components(i) = element;
+                       disp('found element')                       
+                       return;
+                   end
+                end
+                for i = 1:length(asm.assemblies)
+                    asm.assemblies = ifind(asm.assemblies, name);   
+                end
+            end
+        end
+        
     end
 end
 

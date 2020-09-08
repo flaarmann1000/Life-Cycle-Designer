@@ -3,7 +3,6 @@ function DisplayI_Assembly(tree,asm,flag)
 
     NodeData.name = asm.name;
     NodeData.volume = asm.volume;
-    NodeData.material = asm.material;
     NodeData.mass = asm.mass;
     root = uitreenode(tree,'Text',asm.name,'NodeData',NodeData, "Icon", "res\asm.png");
 
@@ -63,7 +62,6 @@ function DisplayI_Assembly(tree,asm,flag)
             if isprop(obj,"features")
                 for i = 1: length(obj.features)            
                     NodeData.name = obj.features(i).name;              
-                    NodeData.baseFeature = obj.features(i).baseFeature ;
                     NodeData.objectType = obj.features(i).objectType;
                     NodeData.featureDef = obj.features(i).featureDef;
                     feature = uitreenode(parent,'Text',obj.features(i).name,'NodeData',NodeData,"icon","res\feature.png");
