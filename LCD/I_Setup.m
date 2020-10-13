@@ -1,4 +1,4 @@
-classdef I_Setup
+ classdef I_Setup
     %I_Part class
     
    properties

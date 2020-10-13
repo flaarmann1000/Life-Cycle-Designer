@@ -1,4 +1,4 @@
-function [asm] = I_Assembly2Assembly(app,i_asm)
+function [asm] = I_Assembly2Assembly(app,i_asm,classifyFlag)
 % I_Assembly2Assembly restructures imported I_Assembly
 % Removes empty I_Parts
 % combines I_Parts with one I_Solid to Component
@@ -7,27 +7,28 @@ function [asm] = I_Assembly2Assembly(app,i_asm)
     
     h = waitbar(20,['convert assembly...']);            
     asm = Assembly(i_asm.name);    
-    asm = Iterate(asm, i_asm);        
+    asm = Iterate(asm, i_asm);                
     waitbar(60,h,['map features...']);            
-    asm = mapfeatures(asm, i_asm.features);
+    asm = mapfeatures(asm, i_asm.features);    
     waitbar(80,h,['map joints...']);            
     asm = mapjoints(asm, i_asm.joints);
-    close(h);
-       
+    close(h);            
+    
     function parent = Iterate(parent,iparent)        
         for j = 1:length(iparent.solids)                 
-            s = iparent.solids(j);                                   
-
+            s = iparent.solids(j);                                               
             processParameter.mass.value = str2double(s.mass); %kg
             processParameter.volume.value = str2double(s.volume)/1e6; %cm^3 -> m^3            
             processParameter.density.value = str2double(s.density)*1e6; %g/mm^3 -> kg/m^3            
-            processParameter.boundingBox.value = s.boundingBox/100; %[3x1] cm --> m            
+            processParameter.boundingBoxX.value = s.boundingBox(1)/100; %cm --> m            
+            processParameter.boundingBoxY.value = s.boundingBox(2)/100; %cm --> m            
+            processParameter.boundingBoxZ.value = s.boundingBox(3)/100; %cm --> m            
             processParameter.surface.value = str2double(s.surface)/10000; %cm^2 -> m^2            
             %https://www.jotun.com/Datasheets/Download?url=%2FTDS%2FTDS__12300__Alkyd+Topcoat__Euk__GB.pdf
             %Density: 1.1kg/l - theoretical spreading rate: 22-11m²/l
-            processParameter.paintMass.value = processParameter.surface.value / 16.5 * 1.1;                        
+            processParameter.paintMass.value = processParameter.surface.value / 16.5 * 1.1;                                    
             ob = Component(app, s.name,s.material,processParameter);            
-            parent = parent.addComponent(ob);            
+            parent = parent.addComponent(ob,app,classifyFlag);            
         end
         for j = 1:length(iparent.parts)            
             if iparent.parts(j).getChildrenCount > 1 
@@ -43,16 +44,18 @@ function [asm] = I_Assembly2Assembly(app,i_asm)
                 processParameter.mass.value = str2double(s.mass); %kg            
                 processParameter.volume.value = str2double(s.volume)/1e6; %cm^3 -> m^3
                 processParameter.density.value = str2double(s.density)*1e6; %g/mm^3 -> kg/m^3
-                processParameter.boundingBox.value = s.boundingBox/100; %[3x1] cm --> m
+                processParameter.boundingBoxX.value = s.boundingBox(1)/100; %cm --> m            
+                processParameter.boundingBoxY.value = s.boundingBox(2)/100; %cm --> m            
+                processParameter.boundingBoxZ.value = s.boundingBox(3)/100; %cm --> m   
                 processParameter.surface.value = str2double(s.surface)/10000; %cm^2 -> m^2
                 %https://www.jotun.com/Datasheets/Download?url=%2FTDS%2FTDS__12300__Alkyd+Topcoat__Euk__GB.pdf
                 %Density: 1.1kg/l - theoretical spreading rate: 22-11m²/l
-                processParameter.paintMass.value = processParameter.surface.value / 16.5 * 1.1;
+                processParameter.paintMass.value = processParameter.surface.value / 16.5 * 1.1;                
                 ob = Component(app, p.name,s.material,processParameter);                        
                 ob.solidName = p.solids.name;
                 ob = mapfeatures(ob,iparent.parts(j).features);
                 ob = mapjoints(ob,iparent.parts(j).joints);
-                parent = parent.addComponent(ob);
+                parent = parent.addComponent(ob,app,classifyFlag);
             end               
         end  
     end

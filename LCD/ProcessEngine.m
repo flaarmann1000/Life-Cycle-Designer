@@ -31,10 +31,9 @@ classdef ProcessEngine
         function [process, fail] = getProcess(obj, app, name, location, refProduct)                                                        
            fail = 0;           
            for i = 1:length(obj.processes)
-               if (strcmp(string(obj.processes(i).activityName),string(name)) && strcmp(string(obj.processes(i).activityLoc),string(location))) && strcmp(string(obj.processes(i).refProduct),string(refProduct))
-               %if  obj.processes(i).activityName == string(name)
-                 process = obj.processes(i); 
-                 process .id = java.util.UUID.randomUUID.toString;
+               if (strcmp(string(obj.processes(i).name),string(name)) && strcmp(string(obj.processes(i).activityLoc),string(location))) && strcmp(string(obj.processes(i).refProduct),string(refProduct))               
+                 process = copy(obj.processes(i)); 
+                 process.id = java.util.UUID.randomUUID.toString;
                  return
                end           
            end                         
@@ -45,8 +44,7 @@ classdef ProcessEngine
                obj.saveProcesses();
            else
                fail  = 1;
-               process = 0;
-               disp("Couldnt find & couldnt create process " + name);
+               process = 0;               
            end                                     
         end
     end

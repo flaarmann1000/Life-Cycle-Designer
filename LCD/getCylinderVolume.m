@@ -1,4 +1,4 @@
-function vol = getCylinderVolume(bbox)
+function vol = getCylinderVolume(bbox, allowance)
     %detects the most similar dimensions 
     %and assumes it as end face                    
     r12 = abs(1 - bbox(1)/bbox(2));
@@ -18,5 +18,5 @@ function vol = getCylinderVolume(bbox)
        z = bbox(1);
        d = bbox(1);
     end    
-    vol = pi*(d*1.05)^2/4*(z*1.05); % 5% machining allowance added
+    vol = pi*(d*(1+allowance/100))^2/4*(z*(1+allowance/100)); 
 end

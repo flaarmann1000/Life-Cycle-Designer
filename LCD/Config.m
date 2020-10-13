@@ -6,7 +6,7 @@ classdef Config
         id string
         name string
         stages ConfigStage
-        material string
+        materialGroup string
         classification string
     end
     

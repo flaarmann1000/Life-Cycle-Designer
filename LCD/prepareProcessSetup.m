@@ -1,4 +1,4 @@
-%% generate Material and process type list  - Start Here
+%% generate Material and process type list 
 
 classificationType = ["production","assembly","use","eol"];
 
@@ -11,11 +11,11 @@ for c = 1:length(classificationType)
     t = readtable("tables/"+classificationType(c)+"_classification.xlsx",'sheet','classification');
     classifications = cell(0);
 
-    materialList = string(t.material);
+    materialGroupList = string(t.materialGroup);
 
-    for i = 1:length(materialList)
-        material = materialList(i);
-        d = t( string(t.material) ==  material , :);
+    for i = 1:length(materialGroupList)
+        materialGroup = materialGroupList(i);
+        d = t( string(t.materialGroup) ==  materialGroup , :);
         list = [];
         for e = 2:numClassifications+1
             list = [list string(d.(e))];
@@ -23,10 +23,7 @@ for c = 1:length(classificationType)
         list = {unique(list)};        
         classifications(i) = list;
     end
-    
-    if c == 1
-        save('materials.mat','materialList');
-    end
+        
     
     save(classificationType(c)+"ClassificationList.mat",'classifications');
     disp(classificationType(c)+" exported");
@@ -37,18 +34,18 @@ end
 
 stack = ConfigProcessDealer();
 
-proTable = readtable("EcoSelection.xlsx","sheet","processes");
+%proTable = readtable("tables/EcoSelection.xlsx","sheet","processes");
 
-for e=1:height(proTable)   
-   p = ConfigProcess(proTable.ActivityName{e},proTable.Location{e},proTable.ReferenceProduct{e});
-   stack = stack.addProcess(p);
-end
+% for e=1:height(proTable)   
+%    p = ConfigProcess(proTable.ActivityName{e},proTable.Location{e},proTable.ReferenceProduct{e});
+%    stack = stack.addProcess(p);
+% end
 
-varTable = readtable("EcoSelection.xlsx","sheet","parameters");
+GroupTable = readtable("tables/processGroups.xlsx","sheet","groups");
 
 % add alternativces
-for e = 1:height(varTable)
-    t = readtable("EcoSelection.xlsx","sheet",varTable.Parameters{e});
+for e = 1:height(GroupTable)
+    t = readtable("tables/processGroups.xlsx","sheet",GroupTable.GroupNames{e});
     p = ConfigProcess(t.ActivityName{1},t.Location{1},t.ReferenceProduct{1});   
     for i = 2:height(t)
         a = ConfigProcess(t.ActivityName{i},t.Location{i},t.ReferenceProduct{i});
@@ -63,8 +60,6 @@ end
 
 configList = ConfigWrapper("configs");
 
-%classificationType = ["production","assembly"];
-
 for c = 1:length(classificationType)
 
     classifications = sheetnames('tables/'+classificationType(c)+'_generation.xlsx');
@@ -72,29 +67,33 @@ for c = 1:length(classificationType)
     for s = 1:length(classifications)  
         classification = classifications(s);               
         classiTable = readtable('tables/'+classificationType(c)+'_generation.xlsx','sheet',classification,'PreserveVariableNames',1);
-        varNames = classiTable.Properties.VariableNames;                
-
-        main = classiTable.(varNames{2});        
+        varNames = classiTable.Properties.VariableNames; % all column names
+        main = classiTable.(varNames{2}); %decides if this classification will be generated (~= #)  
         for m = 1:height(classiTable)            
-            material = classiTable.material{m};
+            materialGroup = classiTable.materialGroup{m}; % e.g. aluminium
 
-            if  main{m} ~= "#"  && (material ~= "none")                 
-                config = Config(material + " - " + classification);                
-                config.material = material;
+            if  main{m} ~= "#"  && (materialGroup ~= "none")                 
+                config = Config(materialGroup + " - " + classification);                
+                config.materialGroup = materialGroup;
                 config.classification = classification;
 
-                for o = 1:(length(varNames)-1)/4 
-                    opNr = o*4-2; %2,6,10...
-                    columnName = varNames{opNr};
-                    entry = string(classiTable.(columnName));
-                    entry = entry(m);
-                    if ~ismissing(entry) && ~isempty(entry) && (entry ~= "")
+                for o = 1:(length(varNames)-1)/6 
+                    opNr = o*6-4; %2,8,14...
+                    columnName = varNames{opNr};                    
+                    row = string(classiTable.(columnName));
+                    processName = row(m);
+                    if ~ismissing(processName) && ~isempty(processName) && (processName ~= "")
                         str = strsplit(columnName,'.');
                         stageName = str(1);
                         operationName = str(2);
                         stage = config.getStage(stageName);
                         operation = stage.getOperation(operationName);
-                        p = stack.getProcessByName(entry);                        
+                        %p = stack.getProcessByName(entry);                        
+                        RefColumn = string(classiTable.(varNames{opNr+4}));
+                        ref = RefColumn(m);
+                        LocColumn = string(classiTable.(varNames{opNr+5}));
+                        loc = LocColumn(m);
+                        p = stack.getProcess(processName,ref,loc);
                         correctionColumn = string(classiTable.(varNames{opNr+1}));
                         p.correction = correctionColumn(m);
                         parameterColumn = string(classiTable.(varNames{opNr+2}));
@@ -118,6 +117,8 @@ stack.check();
 
 % convert configList to table
 
+
+
 configTable = table;
 altProcessesTable = table;
 
@@ -130,7 +131,7 @@ for c = 1:length(configList.configs)
            for p = 1:length(configList.configs(c).stages(s).operations(o).processes)
                process = configList.configs(c).stages(s).operations(o).processes(p);
                configStruct = [];
-               configStruct.ConfigMaterial = config.material;
+               configStruct.ConfigMaterial = config.materialGroup;
                configStruct.Classification = config.classification;
                configStruct.StageName = stage.name;
                configStruct.OperationName = operation.name;
@@ -140,7 +141,7 @@ for c = 1:length(configList.configs)
                configStruct.ProcessCorrection = process.correction;
                configStruct.ProcessParameter = process.parameter;
                configStruct.ProcessType = process.type;
-               configStruct.ProcessRefProduct = string(process.refProduct);                              
+               configStruct.ProcessRefProduct = string(process.refProduct);
                configStruct.AlternativeProcessName = '#';
                configStruct.AlternativeProcessLoc = '#';
                configStruct.AlternativeProcessRefProduct = '#';

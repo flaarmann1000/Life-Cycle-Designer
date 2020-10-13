@@ -1,8 +1,13 @@
-function [config] = getConfig(app,material,classification)
+function [config] = getConfig(app,materialGroup,classification)
 %getConfig returns config struct from material and classification
 
-stagesTable = app.configTable(string(app.configTable.ConfigMaterial) == material & string(app.configTable.Classification) == classification,:);
+
+stagesTable = app.configTable(string(app.configTable.ConfigMaterial) == materialGroup & string(app.configTable.Classification) == classification,:);
 stageNames = unique(stagesTable.StageName);
+
+if isempty(stageNames)
+    disp("no config found for: " + materialGroup + " - " + classification);
+end
 
 config = [];
 for s = 1:length(stageNames)

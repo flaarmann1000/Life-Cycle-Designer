@@ -1,11 +1,11 @@
 function Asm = struct2I_Assembly(struct)            
 %Converts Struct to I_Assembly object
-name = struct.assembly.Attributes.name;
-mass = str2double(struct.assembly.Attributes.mass);
-volume = str2double(struct.assembly.Attributes.volume);
+name = struct.product.Attributes.name;
+mass = str2double(struct.product.Attributes.mass);
+volume = str2double(struct.product.Attributes.volume);
 Asm = I_Assembly(name, volume, mass);
 
-Asm = Iterate(struct.assembly, Asm);
+Asm = Iterate(struct.product, Asm);
 
 end
 
@@ -15,7 +15,7 @@ function root = Iterate(struct, root)
                     if length(struct.solid) == 1     
                         name = struct.solid.Attributes.name;
                         volume = struct.solid.Attributes.volume;
-                        material = struct.solid.Attributes.appearance;   
+                        material = struct.solid.Attributes.material;   
                         mass = struct.solid.Attributes.mass;
                         density = struct.solid.Attributes.density;
                         boundingBox = [str2double(struct.solid.Attributes.BoundingBoxX) str2double(struct.solid.Attributes.BoundingBoxY) str2double(struct.solid.Attributes.BoundingBoxZ)];
@@ -25,7 +25,7 @@ function root = Iterate(struct, root)
                     else
                         name = struct.solid{i}.Attributes.name;
                         volume = struct.solid{i}.Attributes.volume;
-                        material = struct.solid{i}.Attributes.appearance;                        
+                        material = struct.solid{i}.Attributes.material;                        
                         mass = struct.solid{i}.Attributes.mass;
                         density = struct.solid{i}.Attributes.density;
                         boundingBox = [str2double(struct.solid{i}.Attributes.BoundingBoxX) str2double(struct.solid{i}.Attributes.BoundingBoxY) str2double(struct.solid{i}.Attributes.BoundingBoxZ)];
@@ -36,24 +36,22 @@ function root = Iterate(struct, root)
                     root.solids(length(root.solids)+1) = solid;
                 end
             end
-            if isfield(struct,"part")                
-                for i = 1: length(struct.part)
-                    if length(struct.part) == 1
-                        name = struct.part.Attributes.name;
-                        volume = str2double(struct.part.Attributes.volume);
-                        %material = struct.part.Attributes.appearance;
-                        material = 'PART';
-                        mass = str2double(struct.part.Attributes.mass);                        
+            if isfield(struct,"component")                
+                for i = 1: length(struct.component)
+                    if length(struct.component) == 1
+                        name = struct.component.Attributes.name;
+                        volume = str2double(struct.component.Attributes.volume);                        
+                        material = 'COMPONENT';
+                        mass = str2double(struct.component.Attributes.mass);                        
                         part = I_Part(name,volume,material,mass);
-                        part = Iterate(struct.part, part);
+                        part = Iterate(struct.component, part);
                     else
-                        name = struct.part{i}.Attributes.name;
-                        volume = str2double(struct.part{i}.Attributes.volume);
-                        %material = struct.part{i}.Attributes.appearance;
-                        material = 'PART';
-                        mass = str2double(struct.part{i}.Attributes.mass);     
+                        name = struct.component{i}.Attributes.name;
+                        volume = str2double(struct.component{i}.Attributes.volume);                        
+                        material = 'COMPONENT';
+                        mass = str2double(struct.component{i}.Attributes.mass);     
                         part = I_Part(name,volume,material,mass);
-                        part = Iterate(struct.part{i}, part);
+                        part = Iterate(struct.component{i}, part);
                     end                                  
                     root.parts(length(root.parts)+1) = part;                    
                 end    

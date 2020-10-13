@@ -1,12 +1,13 @@
-classdef Stage 
+classdef Stage < handle & matlab.mixin.Copyable
     %UNTITLED11 Summary of this class goes here
     %   Detailed explanation goes here
     
     properties                
         name
+        parent
         operations Operation
         rate double
-        %id string;
+        id string;
     end
     
     methods
@@ -14,11 +15,17 @@ classdef Stage
         % (get Simulation Quality)        
         function obj = Stage(name)            
             obj.name = name;   
-            %obj.id = java.util.UUID.randomUUID.toString;
+            obj.id = java.util.UUID.randomUUID.toString;
         end   
         
         function obj = displayStage(obj,app,style)              
             g = digraph();
+            
+            if isempty(obj.operations)
+                cla(app.UIAxes);
+                return
+            end
+            
             g = g.addnode(obj.operations(1).name);
             opNames = obj.operations(1).name;            
             for i = 2:length(obj.operations)
@@ -36,14 +43,20 @@ classdef Stage
                 col = zeros(length(impacts),3);            
                 col(impacts > 0,1) = 1;
                 col(impacts < 0,3) = 1;
-                impactsNorm = abs(impacts) / app.modelImpact * 10000 + 0.001;
+                impactsNorm = abs(impacts) / app.getModelImpact * 10000 + 0.001;
                 im  = scatter(app.UIAxes,h.XData, h.YData,[], col, 'filled','SizeData',impactsNorm,'PickableParts' , 'none');            
-                alpha(im,.2) 
-                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
-                %text(app.UIAxes, h.XData + 0.05, h.YData-0.1 ,string(impacts),'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 15, 'Color', [.8 .6 .6], 'FontWeight','normal')                                        
+                alpha(im,.2)                                 
                 hold(app.UIAxes,"off");
             end
             
+            if app.options.normTime
+                app.L_Navi.Text = obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + " / yr)";
+                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+            else
+                app.L_Navi.Text = obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + ")";
+                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+            end
+                        
             set(h,'ButtonDownFcn',@app.getCoord); % Defining what happens when clicking                                    
         end 
         
@@ -58,7 +71,8 @@ classdef Stage
         end
         
         function obj = addOperation(obj, op)
-           obj.operations = [obj.operations op];
+            op.parent = obj;
+            obj.operations = [obj.operations op];
         end           
         
     end

@@ -1,16 +1,15 @@
-classdef EcoinventProcess
+classdef EcoinventProcess < handle & matlab.mixin.Copyable
     %UNTITLED11 Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties        
-        id string     
-        stageId string
+    properties
+        parent
         
-        rate double %depends on stage
+        id string
         
         locList string
         
-        activityName string
+        name string
         refProduct string
         activityLoc string
         functionalUnit string
@@ -18,137 +17,219 @@ classdef EcoinventProcess
         cost double
         index double
         quantity double = 1
-        correction = 1;        
+        quantityExpression string
+        correction = 1;
         
         alternativeProcesses EcoinventProcess
         
         stotal %intermediate flows
-        gtotal %elementary flows        
+        gtotal %elementary flows
         htotal %impact vector
         
-        scalarImpact % impact for the selected indicator        
-        %scalarImpactIndex = 189; %ecological footprint - total  
+        scalarImpact % impact for the selected indicator
+        %scalarImpactIndex = 189; %ecological footprint - total
         scalarImpactIndex = 534; %IPCC 2007 (obsolete) - GWP 100a
         
         graph % visualisation
-
+        
     end
     
-    methods        
+    methods
         % generate LCIA
         % crateByID
-        % visualize Process      
+        % visualize Process
         function obj = EcoinventProcess(app, activityName, activityLoc, refProduct)
-            obj.activityName = string(activityName);
+            obj.id = java.util.UUID.randomUUID.toString;
+            obj.name = string(activityName);
             obj.refProduct = string(refProduct);
-            obj.activityLoc = string(activityLoc);            
+            obj.activityLoc = string(activityLoc);
             if string(activityName) == "empty"
-               obj.scalarImpact = 0;
-               return
+                obj.scalarImpact = 0;
+                return
             end
-                 
-            n = length(app.A_min);                            
-            row = app.ie((string(app.ie.activityName) == string(activityName) & string(app.ie.geography) == string(activityLoc) & string(app.ie.product) == string(refProduct)),:);            
-            obj.index = row.index;                                    
-            obj.unit = row.unitName;            
             
-            rowLoc = app.ie((string(app.ie.activityName) == string(activityName) & string(app.ie.product) == string(refProduct)),:);            
+            n = length(app.A_min);
+            row = app.ie((string(app.ie.activityName) == string(activityName) & string(app.ie.geography) == string(activityLoc) & string(app.ie.product) == string(refProduct)),:);
+            obj.index = row.index;
+            obj.unit = row.unitName;
+            
+            rowLoc = app.ie((string(app.ie.activityName) == string(activityName) & string(app.ie.product) == string(refProduct)),:);
             obj.locList = string(rowLoc.geography);
-                                     
-            f = zeros(n,1);                
-            f(obj.index+1) = 1;  
+            
+            f = zeros(n,1);
+            f(obj.index+1) = 1;
             obj.stotal = app.A_inv*f; %product flows
-            obj.gtotal = app.B*obj.stotal; %elementary flows            
-            obj.htotal = app.Q*obj.gtotal; %impact     
-            obj.scalarImpact = obj.htotal(obj.scalarImpactIndex+1); %impact     
+            obj.gtotal = app.B*obj.stotal; %elementary flows
+            obj.htotal = app.Q*obj.gtotal; %impact
+            obj.scalarImpact = obj.htotal(obj.scalarImpactIndex+1); %impact
             
             obj = obj.generateGraph(app);
         end
         
-        function impact = generateLCIA(obj,app)                  
-            %rate = app.model.assemblies.getRateByStageId(obj.stageId);                        
+        function impact = generateLCIA(obj,app)
             lciaIndex = app.lciaIndex;
-            impact = obj.htotal(lciaIndex+1)* obj.correction * obj.quantity * obj.rate;
+            rate = obj.getRateEff(app);
+            obj.quantity = parseQuantity(obj);
+            if app.options.normTime
+                norm = app.options.referenceTime;
+            else
+                norm = 1;
+            end
+            
+            impact = obj.htotal(lciaIndex+1)* obj.correction * obj.quantity * rate / norm;
+        end
+        
+        function rateEff = getRateEff(obj,app)
+            com = obj.parent.parent.parent;
+            stageName = obj.parent.parent.name;
+            stageRate = com.rates.(stageName);
+            
+            if com.exchangable
+                recircles = floor((app.options.referenceTime - 0.001 )/ com.processParameter.lifespan.value);
+            else
+                recircles = floor((app.options.referenceTime - 0.001 )/ app.model.root.processParameter.lifespan.value);
+            end
+            
+            switch stageName
+                case 'virginMaterial'                                        
+                    rateEff = stageRate*(recircles + 1);
+                case 'recycledMaterial'
+                    rateEff = stageRate*(recircles + 1);
+                case 'production'
+                    rateEff = 1 + stageRate*recircles;
+                case 'assembly'
+                    rateEff = 1 + stageRate*recircles;
+                case 'distribution'
+                    rateEff = 1 + stageRate*recircles;
+                case 'use'
+                    rateEff = app.options.referenceTime / com.processParameter.lifespan.value;
+                case 'disposal'
+                    rateEff = stageRate*(recircles + 1);
+                case 'maintenance'
+                    rateEff = stageRate * app.options.referenceTime / com.processParameter.lifespan.value;
+                case 'refurbishment'
+                    rateEff = stageRate*(recircles + 1);
+                case 'remanufacturing'
+                    rateEff = stageRate*(recircles + 1);
+                case 'recycling'                    
+                    rateEff = stageRate*(recircles + 1);
+            end
             
         end
         
-%         function impact = getImpact(obj, app, method, indicator)                                    
-%             lciaTableMethods = app.LCIA(find(contains(app.LCIA.method,method)),:);
-%             lciaTableIndicators = lciaTableMethods(find(contains(lciaTableMethods.indicator,indicator)),:);
-%             lciaIndex = lciaTableIndicators.index(1);            
-%             impact = obj.quantity*obj.correction*obj.htotal(lciaIndex+1)*rate; %impact     
-%             
-%         end
+        function quantity = parseQuantity(obj)
+                        
+            parameter = obj.parent.parent.parent.processParameter;            
+            
+            dicNames = string(fieldnames(parameter ));
+            dicValues = zeros(length(dicNames),1);
+            
+            for i = 1:length(dicNames)
+                dicValues(i) = parameter.(dicNames(i)).value;
+            end
+            
+            cparameter = obj.parent.parent.parent.customParameter;
+            if ~isempty(cparameter)
+                cdicNames = string(fieldnames(cparameter));
+                cdicValues = zeros(length(cdicNames),1);
+                for i = 1:length(cdicNames)                    
+                    cdicValues(i) = cparameter.(cdicNames(i)).value;
+                end
+                pe = parserEngine();
+                pe.dicNames = [dicNames; cdicNames];
+                pe.dicValues = [dicValues; cdicValues];
+            else
+                pe = parserEngine();
+                pe.dicNames = [dicNames];
+                pe.dicValues = [dicValues];
+            end
+            quantity = pe.run(obj.quantityExpression);
+        end
         
-        function displayProcess(obj,app)          
+        
+        function displayProcess(obj,app,axes)
             
             obj.scalarImpactIndex = app.lciaIndex;
             obj.scalarImpact = obj.htotal(app.lciaIndex+1);
             obj = obj.generateGraph(app);
             
-            if height(obj.graph.Edges) > 0
-                fig = plot(app.UIAxes, obj.graph,'NodeLabel',obj.graph.Nodes.Title,'Layout',"layered",'LineWidth',abs(obj.graph.Edges.Weight/obj.htotal(app.lciaIndex+1))*20,'EdgeColor',obj.graph.Edges.edgeColor-.01, 'MarkerSize',obj.graph.Nodes.Size*25,'NodeColor',obj.graph.Nodes.Color-.01,'NodeFontAngle','normal', 'NodeLabelColor', [.5 .5 .5] , 'NodeFontSize', 10);            
+            rate = obj.getRateEff(app);
+            obj.quantity = parseQuantity(obj);
+            if app.options.normTime
+                norm = app.options.referenceTime;
             else
-                fig = plot(app.UIAxes, obj.graph,'NodeLabel',obj.graph.Nodes.Title,'Layout',"layered",'MarkerSize',obj.graph.Nodes.Size*25,'NodeColor',obj.graph.Nodes.Color-.01,'NodeFontAngle','normal', 'NodeLabelColor', [.5 .5 .5] , 'NodeFontSize', 10);            
+                norm = 1;
             end
-            %fig = plot(ax, obj.graph,'NodeLabel',obj.graph.Nodes.Title,'Layout',"layered",'NodeColor','black','EdgeColor',obj.graph.Edges.edgeColor-.01, 'MarkerSize',obj.graph.Nodes.Size*25,'NodeColor',obj.graph.Nodes.Color-.01,'NodeFontAngle','normal', 'NodeLabelColor', [.5 .5 .5] , 'NodeFontSize', 10);
             
-            xLimits = get(app.UIAxes,'XLim');  %# Get the range of the x axis
+            if height(obj.graph.Edges) > 0                                
+                fig = plot(axes, obj.graph,'NodeLabel',obj.graph.Nodes.Title,'Layout',"layered",'Direction','up','LineWidth',abs(obj.graph.Edges.Weight/obj.htotal(app.lciaIndex+1))*20,'EdgeColor',obj.graph.Edges.edgeColor*0.98-.01, 'MarkerSize',obj.graph.Nodes.Size*25,'NodeColor',obj.graph.Nodes.Color*0.98-.01,'NodeFontAngle','normal', 'NodeLabelColor', [.5 .5 .5] , 'NodeFontSize', 10);
+            else
+                fig = plot(axes, obj.graph,'NodeLabel',obj.graph.Nodes.Title,'Layout',"layered",'MarkerSize',obj.graph.Nodes.Size*25,'NodeColor',obj.graph.Nodes.Color*0.98-.01,'NodeFontAngle','normal', 'NodeLabelColor', [.5 .5 .5] , 'NodeFontSize', 10);
+            end
+            
+            xLimits = get(axes,'XLim');  %# Get the range of the x axis
             xLimits = xLimits(2)-xLimits(1);
-            yLimits = get(app.UIAxes,'YLim');
+            yLimits = get(axes,'YLim');
             yLimits = yLimits(2)-yLimits(1);
             
-            text(app.UIAxes, fig.XData(1), fig.YData(1)+(0.04*yLimits),obj.graph.Nodes.Title(1),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 16, 'Color', [.3 .3 .35], 'FontWeight','normal')   
-            text(app.UIAxes, fig.XData(1), fig.YData(1)+(0.04*yLimits),string(obj.graph.Nodes.Impact(1)*obj.correction*obj.quantity*obj.rate) + " " + app.lciaUnit,'VerticalAlignment','top', 'HorizontalAlignment', 'center', 'FontSize', 12, 'Color', [.6 .6 .7], 'FontWeight','normal')    
-            text(app.UIAxes, fig.XData(2:end)+(0.02*xLimits), fig.YData(2:end)+(0.01*xLimits) ,obj.graph.Nodes.Title(2:end),'VerticalAlignment','baseline','HorizontalAlignment', 'left','FontSize', 14, 'Color', [.3 .3 .35])   
-            text(app.UIAxes, fig.XData(2:end)+(0.02*xLimits), fig.YData(2:end) ,string(obj.graph.Nodes.Impact(2:end)*obj.correction*obj.quantity*obj.rate) + " " + app.lciaUnit,'VerticalAlignment','top','HorizontalAlignment', 'left','FontSize', 12, 'Color', [.6 .6 .7])
-            set(fig,'ButtonDownFcn',@app.getCoord);
-            resetplotview(app.UIAxes);           
+            text(axes, fig.XData(1), fig.YData(1)+(0.04*yLimits),obj.graph.Nodes.Title(1),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 16, 'Color', [.3 .3 .35], 'FontWeight','normal')
+            text(axes, fig.XData(2:end)+(0.02.*xLimits), fig.YData(2:end)+(0.01.*xLimits) ,obj.graph.Nodes.Title(2:end),'VerticalAlignment','baseline','HorizontalAlignment', 'left','FontSize', 14, 'Color', [.3 .3 .35])
+            if app.options.normTime
+                text(axes, fig.XData(1), fig.YData(1)+(0.04*yLimits),string(obj.graph.Nodes.Impact(1)*obj.correction*obj.quantity.*rate / norm) + " " + app.lciaUnit + ' / yr' ,'VerticalAlignment','top', 'HorizontalAlignment', 'center', 'FontSize', 12, 'Color', [.6 .6 .7], 'FontWeight','normal')
+                text(axes, fig.XData(2:end)+(0.02.*xLimits), fig.YData(2:end) ,string(obj.graph.Nodes.Impact(2:end).*obj.correction.*obj.quantity.*rate / norm) + " " + app.lciaUnit + ' / yr','VerticalAlignment','top','HorizontalAlignment', 'left','FontSize', 12, 'Color', [.6 .6 .7])
+            else
+                text(axes, fig.XData(1), fig.YData(1)+(0.04*yLimits),string(obj.graph.Nodes.Impact(1)*obj.correction*obj.quantity.*rate / norm) + " " + app.lciaUnit,'VerticalAlignment','top', 'HorizontalAlignment', 'center', 'FontSize', 12, 'Color', [.6 .6 .7], 'FontWeight','normal')
+                text(axes, fig.XData(2:end)+(0.02.*xLimits), fig.YData(2:end) ,string(obj.graph.Nodes.Impact(2:end).*obj.correction.*obj.quantity.*rate / norm) + " " + app.lciaUnit,'VerticalAlignment','top','HorizontalAlignment', 'left','FontSize', 12, 'Color', [.6 .6 .7])
+            end
             
-            fig.NodeLabel = {};                                     
+            resetplotview(axes);
+            enableDefaultInteractivity(axes);
+            axes.Interactions = [zoomInteraction, panInteraction];
+            %set(fig,'ButtonDownFcn',@app.getCoord);
+            fig.NodeLabel = {};
         end
-    
+        
         function obj = generateGraph(obj,app)
             n = length(app.A_min);
-            threshold = 0.2;            
-
+            threshold = 0.2;
+            
             D = digraph();
             OccID = 1;
             ActID = obj.index+1;
             Name = string(ActID);
             Amount = obj.quantity*obj.correction;
             Impact = obj.scalarImpact;
-            Title = string(obj.activityName);
+            Title = string(obj.name);
             Size = 1;
             Color = [.3 .3 .35];
             nodeTable = table(Name, OccID, Title, Amount, Impact, ActID, Size, Color);
             D = addnode(D,nodeTable);
-
+            
             maxTier =8;
-                                                
+            
             C = app.C(obj.scalarImpactIndex+1,:);
             
             matrixExpand(obj.index+1,Name,1);
             
             obj.graph = D;
             
-            function matrixExpand(r,parent,tier)                   
-                if(tier < maxTier)                      
-                    fFull = zeros(n,1);                
+            function matrixExpand(r,parent,tier)
+                if(tier < maxTier)
+                    fFull = zeros(n,1);
                     fFull(r) = 1;
                     A_tmp = app.A_min*fFull;
-                    occ = sparse(A_tmp);            
-                    [i,~,~] = find(occ); % return indices                                                   
+                    occ = sparse(A_tmp);
+                    [i,~,~] = find(occ); % return indices
                     for m=1:length(i)
                         Amount = obj.stotal(i(m));
                         f = zeros(n,1);
-                        f(i(m)) = Amount;                        
-                        h = C*f;                                                
+                        f(i(m)) = Amount;
+                        h = C*f;
                         relImpact = abs(h/obj.scalarImpact);
-                        if  relImpact >= threshold                            
+                        if  relImpact >= threshold
                             ActID = i(m);
-                            Impact = h;                    
-                            OccID = OccID + 1;                                                                                                                        
+                            Impact = h;
+                            OccID = OccID + 1;
                             Name = string(ActID);
                             Title = string(app.ie.activityName(i(m)));
                             Size = relImpact;
@@ -156,17 +237,17 @@ classdef EcoinventProcess
                             nodeTable = table(Name, OccID, Title, Amount, Impact, ActID, Size, Color);
                             if ~findnode(D,Name)
                                 D = addnode(D, nodeTable);
-                            end                                        
+                            end
                             if ~findedge(D,parent,Name)
                                 Weight = Impact;
-                                edgeTitle = 'Amount: ' + string(Amount) + '; Impact: ' + string(Impact);                                
+                                edgeTitle = 'Amount: ' + string(Amount) + '; Impact: ' + string(Impact);
                                 edgeColor = Color;
-                                edgeTable = table(Weight, edgeTitle, edgeColor);                    
-                                D = addedge(D,parent,Name,edgeTable);                                
+                                edgeTable = table(Weight, edgeTitle, edgeColor);
+                                D = addedge(D,parent,Name,edgeTable);
                                 matrixExpand(i(m),Name,tier+1);
-                            end                    
+                            end
                         end
-                    end                    
+                    end
                 end
             end
         end
