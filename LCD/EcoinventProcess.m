@@ -48,7 +48,7 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
                 return
             end
             
-            n = length(app.A_min);
+            n = length(app.A_inv);
             row = app.ie((string(app.ie.activityName) == string(activityName) & string(app.ie.geography) == string(activityLoc) & string(app.ie.product) == string(refProduct)),:);
             obj.index = row.index;
             obj.unit = row.unitName;
@@ -58,11 +58,11 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
             
             f = zeros(n,1);
             f(obj.index+1) = 1;
+            
             obj.stotal = app.A_inv*f; %product flows
             obj.gtotal = app.B*obj.stotal; %elementary flows
             obj.htotal = app.Q*obj.gtotal; %impact
-            obj.scalarImpact = obj.htotal(obj.scalarImpactIndex+1); %impact
-            
+            obj.scalarImpact = obj.htotal(obj.scalarImpactIndex+1); %impact            
             obj = obj.generateGraph(app);
         end
         
