@@ -102,6 +102,7 @@ classdef Assembly < handle & matlab.mixin.Copyable
             NodeData.id = asm.id;
             root = uitreenode(tree,'Text',asm.name,'NodeData',NodeData, "Icon", "res\asm.png");
             iterate(root,asm);
+            expand(tree,'all');
             
             
             function iterate(parent,obj)
@@ -323,6 +324,7 @@ classdef Assembly < handle & matlab.mixin.Copyable
             end
             
             if app.options.normTime
+                app.stageId
                 app.L_Navi.Text = app.activeElement.name + " / " + app.stageNames(app.stageId) + " (" + string(round(sum(values),2)) +" "+ app.lciaUnit + " / yr)";
             else                
                 app.L_Navi.Text = app.activeElement.name + " / " + app.stageNames(app.stageId) + " (" + string(round(sum(values),2)) +" "+ app.lciaUnit + ")";

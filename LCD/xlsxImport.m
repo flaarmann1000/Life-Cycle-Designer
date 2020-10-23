@@ -109,7 +109,8 @@ for i = 1:height(overwritesTable)
         stage.addOperation(op);
     end
     if overwritesTable.processType(i) == "hybridProcess"
-        pro = stack(string({stack.name})' == overwritesTable.Name(i));
+        original = stack(string({stack.name})' == overwritesTable.Name(i));
+        pro = copy(original);
     else
         name = overwritesTable.Name(i);
         loc = overwritesTable.Loc(i);

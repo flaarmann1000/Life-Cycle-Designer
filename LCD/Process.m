@@ -19,9 +19,9 @@ classdef Process < handle & matlab.mixin.Copyable & matlab.mixin.Heterogeneous
         end
         
         function rateEff = getRateEff(obj,app)
-            com = obj.parent.parent.parent;
+            com = obj.parent.parent.parent;            
             stageName = obj.parent.parent.name;
-            stageRate = com.rates.(stageName);
+            stageRate = com.rates.(stageName);                        
             
             if com.exchangable
                 recircles = floor((app.options.referenceTime - 0.001 )/ com.processParameter.lifespan.value);

@@ -33,18 +33,7 @@ classdef HybridProcess < Process
             obj.quantityExpression = "1";
             obj.refProduct = "reference product";
             obj.unit = "kg";
-        end
-        
-%         function new = copy(obj)
-%            new = HybridProcess(obj.name);
-%            new.refProduct = obj.refProduct;
-%            new.unit = obj.unit;
-%            new.quantity = obj.quantity;
-%            new.quantityExpression = obj.quantityExpression;
-%            new.intermediateFlowTable = obj.intermediateFlowTable;
-%            new.elementaryFlowTable = obj.elementaryFlowTable;
-%            new.htotal = obj.htotal;           
-%         end
+        end       
         
         function obj = calculateLCIA(obj,app)
             %create f
@@ -130,7 +119,7 @@ classdef HybridProcess < Process
                                     
             obj.generateGraph(app);
             
-            rate = obj.getRateEff(app);
+            rate = obj.getRateEff(app);            
             obj.quantity = parseQuantity(obj);
             if app.options.normTime
                 norm = app.options.referenceTime;
@@ -192,18 +181,18 @@ classdef HybridProcess < Process
             
             for a = 1:height(obj.intermediateFlowTable)                                
                 t = obj.intermediateFlowTable(a,:);                                    
-                index = getFlowIndex(app,t.ProviderName,t.FlowName,t.ProviderLoc);                                
-                Amount = obj.stotal(index+1);                              
+                flowIndex = getFlowIndex(app,t.ProviderName,t.FlowName,t.ProviderLoc);                                
+                Amount = obj.stotal(flowIndex+1);                              
                 f = zeros(n,1);
-                f(index+1) = Amount;
+                f(flowIndex+1) = Amount;
                 h = C*f;               
-                relImpact = abs(h/obj.htotal(app.lciaIndex+1));                
-                if  relImpact >= threshold                    
-                    ActID = index+1;
+                relImpact = abs(h/obj.htotal(app.lciaIndex+1));                                
+                if  relImpact >= threshold                       
+                    ActID = flowIndex+1;
                     Impact = h;
                     OccID = OccID + 1;
                     Name = string(ActID);
-                    Title = string(app.ie.activityName(index+1));
+                    Title = string(app.ie.activityName(flowIndex+1));                    
                     Size = relImpact;
                     Color  = [0.3 + relImpact*0.7  0.5 0.6];
                     nodeTable = table(Name, OccID, Title, Amount, Impact, ActID, Size, Color);
@@ -215,8 +204,8 @@ classdef HybridProcess < Process
                         edgeTitle = 'Amount: ' + string(Amount) + '; Impact: ' + string(Impact);
                         edgeColor = Color;
                         edgeTable = table(Weight, edgeTitle, edgeColor);
-                        D = addedge(D,root,Name,edgeTable);
-                        matrixExpand(index+1,Name,1);
+                        D = addedge(D,root,Name,edgeTable);                        
+                        matrixExpand(flowIndex+1,Name,1);
                     end
                 end                                                                
             end
@@ -229,8 +218,7 @@ classdef HybridProcess < Process
                     A_tmp = app.A_min(:,r);                    
                     occ = sparse(A_tmp);
                     [index,~,~] = find(occ); % return indices
-                    for m=1:length(index)                        
-                        disp(index(m));                        
+                    for m=1:length(index)                                                
                         Amount = obj.stotal(index(m));
                         f = zeros(n,1);
                         f(index(m)) = Amount;

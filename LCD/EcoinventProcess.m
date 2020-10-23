@@ -144,6 +144,9 @@ classdef EcoinventProcess < Process
             end
             
             resetplotview(axes);
+            
+            set(axes.Parent.Parent,'Pointer','arrow')
+            
             enableDefaultInteractivity(axes);
             axes.Interactions = [zoomInteraction, panInteraction];
             %set(fig,'ButtonDownFcn',@app.getCoord);
