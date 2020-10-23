@@ -1,9 +1,8 @@
-classdef EcoinventProcess < handle & matlab.mixin.Copyable
+classdef EcoinventProcess < Process
     %UNTITLED11 Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties
-        parent
+    properties        
         
         id string
         
@@ -29,8 +28,7 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
         scalarImpact % impact for the selected indicator
         %scalarImpactIndex = 189; %ecological footprint - total
         scalarImpactIndex = 534; %IPCC 2007 (obsolete) - GWP 100a
-        
-        graph % visualisation
+                
         
     end
     
@@ -61,8 +59,8 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
             
             obj.stotal = app.A_inv*f; %product flows
             obj.gtotal = app.B*obj.stotal; %elementary flows
-            obj.htotal = app.Q*obj.gtotal; %impact
-            obj.scalarImpact = obj.htotal(obj.scalarImpactIndex+1); %impact            
+            obj.htotal = app.Q*obj.gtotal; %impact            
+            obj.scalarImpact = obj.htotal(app.lciaIndex);
             obj = obj.generateGraph(app);
         end
         
@@ -79,52 +77,16 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
             impact = obj.htotal(lciaIndex+1)* obj.correction * obj.quantity * rate / norm;
         end
         
-        function rateEff = getRateEff(obj,app)
-            com = obj.parent.parent.parent;
-            stageName = obj.parent.parent.name;
-            stageRate = com.rates.(stageName);
-            
-            if com.exchangable
-                recircles = floor((app.options.referenceTime - 0.001 )/ com.processParameter.lifespan.value);
-            else
-                recircles = floor((app.options.referenceTime - 0.001 )/ app.model.root.processParameter.lifespan.value);
-            end
-            
-            switch stageName
-                case 'virginMaterial'                                        
-                    rateEff = stageRate*(recircles + 1);
-                case 'recycledMaterial'
-                    rateEff = stageRate*(recircles + 1);
-                case 'production'
-                    rateEff = 1 + stageRate*recircles;
-                case 'assembly'
-                    rateEff = 1 + stageRate*recircles;
-                case 'distribution'
-                    rateEff = 1 + stageRate*recircles;
-                case 'use'
-                    rateEff = app.options.referenceTime / com.processParameter.lifespan.value;
-                case 'disposal'
-                    rateEff = stageRate*(recircles + 1);
-                case 'maintenance'
-                    rateEff = stageRate * app.options.referenceTime / com.processParameter.lifespan.value;
-                case 'refurbishment'
-                    rateEff = stageRate*(recircles + 1);
-                case 'remanufacturing'
-                    rateEff = stageRate*(recircles + 1);
-                case 'recycling'                    
-                    rateEff = stageRate*(recircles + 1);
-            end
-            
-        end
+        
         
         function quantity = parseQuantity(obj)
                         
-            parameter = obj.parent.parent.parent.processParameter;            
+            parameter = obj.parent.parent.parent.processParameter;                                   
             
-            dicNames = string(fieldnames(parameter ));
+            dicNames = string(fieldnames(parameter));
             dicValues = zeros(length(dicNames),1);
             
-            for i = 1:length(dicNames)
+            for i = 1:length(dicNames)                
                 dicValues(i) = parameter.(dicNames(i)).value;
             end
             
@@ -148,9 +110,8 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
         
         
         function displayProcess(obj,app,axes)
-            
-            obj.scalarImpactIndex = app.lciaIndex;
-            obj.scalarImpact = obj.htotal(app.lciaIndex+1);
+                        
+            obj.scalarImpact = obj.htotal(app.lciaIndex+1);            
             obj = obj.generateGraph(app);
             
             rate = obj.getRateEff(app);
@@ -198,8 +159,8 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
             ActID = obj.index+1;
             Name = string(ActID);
             Amount = obj.quantity*obj.correction;
-            Impact = obj.scalarImpact;
-            Title = string(obj.name);
+            Impact = obj.htotal(app.lciaIndex+1);
+            Title = string(obj.name);         
             Size = 1;
             Color = [.3 .3 .35];
             nodeTable = table(Name, OccID, Title, Amount, Impact, ActID, Size, Color);
@@ -207,7 +168,7 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
             
             maxTier =8;
             
-            C = app.C(obj.scalarImpactIndex+1,:);
+            C = app.C(app.lciaIndex+1,:);
             
             matrixExpand(obj.index+1,Name,1);
             
@@ -215,9 +176,10 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
             
             function matrixExpand(r,parent,tier)
                 if(tier < maxTier)
-                    fFull = zeros(n,1);
-                    fFull(r) = 1;
-                    A_tmp = app.A_min*fFull;
+                    %fFull = zeros(n,1);
+                    %fFull(r) = 1;
+                    %A_tmp = app.A_min*fFull; %takes 10 seconds
+                    A_tmp = app.A_min(:,r);
                     occ = sparse(A_tmp);
                     [i,~,~] = find(occ); % return indices
                     for m=1:length(i)
@@ -231,7 +193,7 @@ classdef EcoinventProcess < handle & matlab.mixin.Copyable
                             Impact = h;
                             OccID = OccID + 1;
                             Name = string(ActID);
-                            Title = string(app.ie.activityName(i(m)));
+                            Title = string(app.ie.activityName(i(m)));                            
                             Size = relImpact;
                             Color  = [0.3 + relImpact*0.7  0.5 0.6];
                             nodeTable = table(Name, OccID, Title, Amount, Impact, ActID, Size, Color);

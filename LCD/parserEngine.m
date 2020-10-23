@@ -91,19 +91,21 @@ classdef parserEngine
                 end
             end
             
-            function value = lookup(name)                                 
-                if ~isnan(str2double(name))
-                    value = str2double(name);
+            function value = lookup(name)
+                
+                val = str2double(name); %too slow
+                if ~isnan(val)
+                    value = val;
                     return
                 else
-                    for d = 1:length(obj.dicNames)                        
-                       if (obj.dicNames(d) == name)
-                           value = obj.dicValues(d);                           
-                           return
-                       end
+                    for d = 1:length(obj.dicNames)
+                        if (obj.dicNames(d) == name)
+                            value = obj.dicValues(d);
+                            return
+                        end
                     end
-                end                
-                value = "error"
+                    value = "error"
+                end
             end
         end                     
         

@@ -6,7 +6,7 @@ classdef Stage < handle & matlab.mixin.Copyable
         name
         parent
         operations Operation
-        rate double
+        %rate double
         id string;
     end
     
@@ -34,7 +34,8 @@ classdef Stage < handle & matlab.mixin.Copyable
             end
             h = plot(app.UIAxes, g, 'ArrowPosition', 0.5,'MarkerSize',30,'NodeColor',[247 182 137]/255,'EdgeColor',[247 182 137]/255,'LineWidth',2,'NodeLabel','','ArrowSize',15);                       
             layout(h,'layered','Direction','down');
-            text(app.UIAxes, h.XData + 0.05, h.YData ,opNames,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')               
+            xScale = app.UIAxes.XLim(2) - app.UIAxes.XLim(1);
+            text(app.UIAxes, h.XData + xScale*0.02, h.YData ,opNames,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')               
             %text(app.UIAxes, h.XData + 0.05, h.YData-0.05 ,obj.processTypes,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 15, 'Color', [.6 .6 .7], 'FontWeight','normal')                                                
             
             if string(style) == "impact"
@@ -51,10 +52,10 @@ classdef Stage < handle & matlab.mixin.Copyable
             
             if app.options.normTime
                 app.L_Navi.Text = obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + " / yr)";
-                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+                text(app.UIAxes, h.XData + xScale*0.02, h.YData-xScale*0.02, string(round(impacts,2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
             else
                 app.L_Navi.Text = obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + ")";
-                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+                text(app.UIAxes, h.XData + xScale*0.02, h.YData-xScale*0.02, string(round(impacts,2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
             end
                         
             set(h,'ButtonDownFcn',@app.getCoord); % Defining what happens when clicking                                    

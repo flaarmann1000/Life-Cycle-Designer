@@ -5,7 +5,7 @@ classdef Operation < handle & matlab.mixin.Copyable
     properties
         id string
         parent
-        processes EcoinventProcess
+        processes Process
         name
     end
     
@@ -17,13 +17,18 @@ classdef Operation < handle & matlab.mixin.Copyable
         end
         
         function obj = addProcess(obj, pro)
+            for i = 1:length(obj.processes)
+               if obj.processes(i).id == pro.id
+                  pro.id = java.util.UUID.randomUUID.toString;
+               end
+            end
             pro.parent = obj;
             obj.processes = [obj.processes pro];
         end
         
         function obj = displayOperation(obj,app)
             g = digraph();
-            if ~isempty(obj.processes)
+            if ~isempty(obj.processes)                
                 g = g.addnode(obj.processes(1).name);
                 proNames = obj.processes(1).name;
                 for i = 2:length(obj.processes)
@@ -33,7 +38,8 @@ classdef Operation < handle & matlab.mixin.Copyable
                 h = plot(app.UIAxes, g, 'ArrowPosition', 0.5,'MarkerSize',30,'NodeColor',[247 182 137]/255,'EdgeColor',[247 182 137]/255,'LineWidth',2,'NodeLabel','','ArrowSize',15);
                 layout(h,'layered','Direction','down');
                 
-                text(app.UIAxes, h.XData + 0.05, h.YData ,proNames,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')
+                xScale = app.UIAxes.XLim(2) - app.UIAxes.XLim(1);
+                text(app.UIAxes, h.XData + xScale*0.02, h.YData ,proNames,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')
                 
                 hold(app.UIAxes,"on");
                 [~,impacts] = obj.generateLCIA(app);
@@ -42,7 +48,7 @@ classdef Operation < handle & matlab.mixin.Copyable
                 col(impacts < 0,3) = 1;
                 impactsNorm = abs(impacts) / app.getModelImpact * 10000 + 0.001;
                 im  = scatter(app.UIAxes,h.XData, h.YData,[], col, 'filled','SizeData',impactsNorm ,'PickableParts' , 'none');
-                alpha(im,.2)                
+                alpha(im,.2)
                 hold(app.UIAxes,"off");
                 
                 set(h,'ButtonDownFcn',@app.getCoord); % Defining what happens when clicking
@@ -50,20 +56,22 @@ classdef Operation < handle & matlab.mixin.Copyable
                 resetplotview(app.UIAxes);
                 app.UIAxes.Toolbar.Visible = 'off';
                 
-                app.BTN_Edit.Enable = false;
+                app.BTN_Exchange.Enable = false;
                 app.BTN_Remove.Enable = false;
                 
-            else
+                if app.options.normTime
+                    app.L_Navi.Text = obj.parent.parent.name + ' / ' + obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + " / yr)";
+                    text(app.UIAxes, h.XData +xScale*0.02, h.YData-xScale*0.02, string(round(impacts,2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+                else
+                    app.L_Navi.Text = obj.parent.parent.name + ' / ' + obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + ")";
+                    text(app.UIAxes, h.XData +xScale*0.02, h.YData-xScale*0.02, string(round(impacts,2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+                end
+                
+            else                
                 cla(app.UIAxes);
             end
             
-            if app.options.normTime
-                app.L_Navi.Text = obj.parent.parent.name + ' / ' + obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + " / yr)";
-                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
-            else
-                app.L_Navi.Text = obj.parent.parent.name + ' / ' + obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + ")";
-                text(app.UIAxes, h.XData +0.05, h.YData-0.05, string(round(impacts,2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
-            end
+            
             
         end
         

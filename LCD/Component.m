@@ -13,7 +13,7 @@ classdef Component < handle & matlab.mixin.Copyable
         stages Stage
         material string
         materialGroup string
-        surface double
+        %surface double
         
         compatibility
         compatibilityStatus double = 1 % can be -1,0,1 == incompatible - possibly incompatible - compatible with assembly
@@ -34,6 +34,7 @@ classdef Component < handle & matlab.mixin.Copyable
     methods
         %function obj = Component(app,name,material,volume,mass,density,bbox,surface)
         function obj = Component(app,name,material,processParameter)
+            
             obj.id = java.util.UUID.randomUUID.toString;
             obj.name = name;
             obj.solidName = name;
@@ -93,13 +94,14 @@ classdef Component < handle & matlab.mixin.Copyable
             for i = 1:length(app.stageIDs)
                 obj.stages(i) = Stage(app.stageIDs(i));
                 obj.stages(i).parent = obj;
-            end            
+            end              
         end
         
-        function obj = displayComponent(obj,app)
+        function obj = displayComponent(obj,app)            
             
             %reset axis
             resetplotview(app.UIAxes);
+            axis(app.UIAxes,"fill");
             app.UIAxes.DataAspectRatio = [1 1 1];
             app.UIAxes.Toolbar.Visible = 'off';
             
@@ -132,7 +134,7 @@ classdef Component < handle & matlab.mixin.Copyable
             end                       
             
             %display rates
-            labeledge(h,1,2,string(obj.rates.virginMaterial*100) + ' %');
+            labeledge(h,1,2,string(obj.rates.production*obj.rates.virginMaterial*100) + ' %');
             labeledge(h,2,3,string(obj.rates.production*100) + ' %');
             labeledge(h,3,4,string(obj.rates.assembly*100) + ' %');
             labeledge(h,4,5,string(obj.rates.distribution*100) + ' %');
@@ -141,7 +143,7 @@ classdef Component < handle & matlab.mixin.Copyable
             labeledge(h,5,8,string(obj.rates.refurbishment*100) + ' %');
             labeledge(h,5,9,string(obj.rates.remanufacturing*100) + ' %');
             labeledge(h,5,10,string(obj.rates.recycling*100) + ' %');
-            labeledge(h,11,2,string(obj.rates.recycledMaterial*100) + ' %');
+            labeledge(h,11,2,string(obj.rates.production*obj.rates.recycledMaterial*100) + ' %');
             
             h.EdgeLabelColor = EdgeColors;
             h.EdgeFontSize = 11;
@@ -173,8 +175,7 @@ classdef Component < handle & matlab.mixin.Copyable
             text(app.UIAxes, h.XData(1:6), h.YData(1:6)-4 ,stageClassifications(1:6),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [247 182 137] / 255, 'FontWeight','normal')            
             text(app.UIAxes, h.XData(7:11), h.YData(7:11)+7.5 ,stageClassifications(7:11),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [247 182 137] / 255, 'FontWeight','normal')
             
-            set(h,'ButtonDownFcn',@app.getCoord); % Defining what happens when clicking
-            axis(app.UIAxes,"fill")
+            set(h,'ButtonDownFcn',@app.getCoord); % Defining what happens when clicking            
             disableDefaultInteractivity(app.UIAxes);
                 
             %display component configuration in options
@@ -210,7 +211,7 @@ classdef Component < handle & matlab.mixin.Copyable
             app.mode = 'Component';
             app.BTN_Close.Enable = false;
             app.BTN_Open.Enable = true;                        
-            
+                        
         end
         
         function [total, vector] = generateLCIA(obj,app)
@@ -248,7 +249,7 @@ classdef Component < handle & matlab.mixin.Copyable
             obj.processParameter.density.value = MP.Density(MP.Material == obj.material,:);
             
             MGP = app.materialGroupProperties;                        
-            obj.processParameter.lifespan.value = MGP.lifespan(MGP.materialGroup == obj.materialGroup,:);                        
+            obj.processParameter.lifespan.value = MGP.lifespan(string(MGP.materialGroup) == string(obj.materialGroup),:);                        
             
             RR = app.recyclingRates;
             area = string(RR.Properties.VariableNames(2));
@@ -271,21 +272,19 @@ classdef Component < handle & matlab.mixin.Copyable
         end
         
         function obj = updateMass(obj)            
-            obj.processParameter.mass.value = obj.processParameter.volume.value * obj.processParameter.density.value;            
-            obj = obj.updateEOL();
+            obj.processParameter.mass.value = obj.processParameter.volume.value * obj.processParameter.density.value;                        
         end
         
-        function obj = setMaterialGroup(obj,app)         
-            disp(obj)
+        function obj = setMaterialGroup(obj,app)                                 
             MP = app.materialProperties;                                
-            obj.materialGroup = string(MP.Group(MP.Material == obj.material));                        
+            obj.materialGroup = string(MP.Group(MP.Material == obj.material));
         end
         
         
         function obj = assignComponentType(obj,app)                                                            
             obj.setMaterialGroup(app);
             if obj.materialGroup == "None"
-               obj.ignore = true;
+               obj.ignore = true;               
                return
             end
             
@@ -293,7 +292,7 @@ classdef Component < handle & matlab.mixin.Copyable
             for ct = 1:length(uniqueClassificationTypes)
                 classificationType = uniqueClassificationTypes(ct);                                
                 conditionsTable = app.conditionTables.(classificationType);
-                classificationTable = app.classificationTables.(classificationType);                
+                classificationTable = app.classificationTables.(classificationType);                                                
                 row = classificationTable(classificationTable.materialGroup == obj.materialGroup,:);
                 
                 if isempty(row)
@@ -352,7 +351,7 @@ classdef Component < handle & matlab.mixin.Copyable
                 end
                                                 
                 allowance = app.options.allowance;              
-                obj.classification.(classificationType) = row.(condition);
+                obj.classification.(classificationType) = row.(condition);                
                 bbvol = getCylinderVolume([obj.processParameter.boundingBoxX.value obj.processParameter.boundingBoxY.value obj.processParameter.boundingBoxZ.value],allowance);
                 obj.processParameter.massRemovedTurning.value = bbvol * obj.processParameter.density.value - obj.processParameter.mass.value;
                 
@@ -364,8 +363,9 @@ classdef Component < handle & matlab.mixin.Copyable
         
         
         function obj = generateStages(obj,app)
-            obj = obj.updateMass();
+            
             obj.updateMaterialProperties(app);                
+            obj = obj.updateMass();
             
             uniqueClassificationTypes = unique(app.stageClassificationTypes);
             for c = 1:length(uniqueClassificationTypes)
@@ -375,7 +375,7 @@ classdef Component < handle & matlab.mixin.Copyable
                 config = getConfig(app,obj.materialGroup,obj.classification.(uniqueClassificationTypes(c)));                
                 for s = 1:length(config.stages)                   
                     stage = Stage(config.stages(s).name);                                        
-                    stage.rate = obj.rates.(stage.name);                    
+                    %stage.rate = obj.rates.(stage.name);                    
                     %obj.stages(s) = stage;                    
                     %stage.parent = obj;
                     obj.setStage(stage);
@@ -404,8 +404,7 @@ classdef Component < handle & matlab.mixin.Copyable
                                 pro.alternativeProcesses = [pro.alternativeProcesses ecoAltPro];
                             end                            
                         end                        
-                    end
-                    %%obj = obj.setStage(stage);
+                    end                    
                 end
             end
         end
@@ -424,21 +423,10 @@ classdef Component < handle & matlab.mixin.Copyable
         
         function obj = addStage(obj, stage)
             stage.parent = obj;
-            obj.stages = [obj.stages stage];
-            %obj.stageNames = [obj.stageNames, stage.name];
-        end
+            obj.stages = [obj.stages stage];            
+        end                        
         
-        function obj = updateEOL(obj)
-            %obj.processParameter.massDisposal.value = obj.rates.disposal * obj.processParameter.mass.value * -1;
-            %obj.processParameter.massMaintenance.value = obj.rates.maintenance * obj.processParameter.mass.value * -1;
-            %obj.processParameter.massRefurbishment.value = obj.rates.refurbishment * obj.processParameter.mass.value * -1;
-            %obj.processParameter.massRemanufacturing.value = obj.rates.remanufacturing * obj.processParameter.mass.value * -1;
-            %obj.processParameter.massRecycling.value = obj.rates.recycling * obj.processParameter.mass.value * -1;
-        end
-        
-        
-    end
-    
+    end    
     
 end
 
