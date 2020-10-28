@@ -7,7 +7,7 @@ classdef EcoinventProcess < Process
         id string
         
         locList string
-        
+        genera
         name string
         refProduct string
         activityLoc string
@@ -104,12 +104,12 @@ classdef EcoinventProcess < Process
                 pe = parserEngine();
                 pe.dicNames = [dicNames];
                 pe.dicValues = [dicValues];
-            end
+            end            
             quantity = pe.run(obj.quantityExpression);
         end
         
         
-        function displayProcess(obj,app,axes)
+        function plot(obj,app,axes)
                         
             obj.scalarImpact = obj.htotal(app.lciaIndex+1);            
             obj = obj.generateGraph(app);

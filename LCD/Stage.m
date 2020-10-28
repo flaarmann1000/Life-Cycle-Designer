@@ -18,7 +18,7 @@ classdef Stage < handle & matlab.mixin.Copyable
             obj.id = java.util.UUID.randomUUID.toString;
         end   
         
-        function obj = displayStage(obj,app,style)              
+        function obj = plot(obj,app)              
             g = digraph();
             
             if isempty(obj.operations)
@@ -37,18 +37,16 @@ classdef Stage < handle & matlab.mixin.Copyable
             xScale = app.UIAxes.XLim(2) - app.UIAxes.XLim(1);
             text(app.UIAxes, h.XData + xScale*0.02, h.YData ,opNames,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')               
             %text(app.UIAxes, h.XData + 0.05, h.YData-0.05 ,obj.processTypes,'VerticalAlignment','bottom', 'HorizontalAlignment', 'left', 'FontSize', 15, 'Color', [.6 .6 .7], 'FontWeight','normal')                                                
-            
-            if string(style) == "impact"
-                hold(app.UIAxes,"on");
-                [~,impacts] = obj.generateLCIA(app);                
-                col = zeros(length(impacts),3);            
-                col(impacts > 0,1) = 1;
-                col(impacts < 0,3) = 1;
-                impactsNorm = abs(impacts) / app.getModelImpact * 10000 + 0.001;
-                im  = scatter(app.UIAxes,h.XData, h.YData,[], col, 'filled','SizeData',impactsNorm,'PickableParts' , 'none');            
-                alpha(im,.2)                                 
-                hold(app.UIAxes,"off");
-            end
+                        
+            hold(app.UIAxes,"on");
+            [~,impacts] = obj.generateLCIA(app);                
+            col = zeros(length(impacts),3);            
+            col(impacts > 0,1) = 1;
+            col(impacts < 0,3) = 1;
+            impactsNorm = abs(impacts) / app.getModelImpact * 10000 + 0.001;
+            im  = scatter(app.UIAxes,h.XData, h.YData,[], col, 'filled','SizeData',impactsNorm,'PickableParts' , 'none');            
+            alpha(im,.2)                                 
+            hold(app.UIAxes,"off");            
             
             if app.options.normTime
                 app.L_Navi.Text = obj.parent.name + ' / ' + obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + " / yr)";

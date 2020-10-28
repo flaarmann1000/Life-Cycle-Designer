@@ -28,7 +28,7 @@ axes = gca;
 set(axes, 'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[], 'XColor', [1 1 1], 'YColor',[1 1 1])
 set(axes, 'InnerPosition',[0 0 1 1])
 
-fontSize = 20/(axes.YLim(2) - axes.YLim(1)) + 3;
+fontSize = 20/(axes.YLim(2) - axes.YLim(1)) + 1;
 txt = text(axes, fig.XData(1:end), fig.YData(1:end),D.Nodes.Title(1:end),'VerticalAlignment','baseline','HorizontalAlignment', 'center','FontSize', fontSize, 'Color', [.3 .3 .35]);
 
 z = zoom(axes); % get handle to zoom utility
@@ -92,8 +92,8 @@ close(h);
     end
 
     function nodeTable = getNodeTable(thing)        
-        Title = thing.name;
-        Name = string(thing.id);        
+        Title = thing.name;        
+        Name = string(thing.id);                
         Amount = thing.generateLCIA(app) + 0.001;
         Color  = [0.3 + abs(Amount)/ref*0.65  0.5 0.6];
         Size = abs(Amount/ref);        

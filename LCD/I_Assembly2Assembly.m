@@ -11,7 +11,10 @@ function [asm] = I_Assembly2Assembly(app,i_asm,classifyFlag)
     waitbar(60,h,['map features...']);            
     asm = mapfeatures(asm, i_asm.features);    
     waitbar(80,h,['map joints...']);            
-    asm = mapjoints(asm, i_asm.joints);
+    %asm = mapjoints(asm, i_asm.joints);
+    
+    %assignin('base','i_asm',i_asm);
+    
     close(h);            
     
     function parent = Iterate(parent,iparent)        
@@ -35,7 +38,10 @@ function [asm] = I_Assembly2Assembly(app,i_asm,classifyFlag)
                 ob = Assembly(iparent.parts(j).name);
                 ob = Iterate(ob, iparent.parts(j));                
                 ob = mapfeatures(ob,iparent.parts(j).features);
-                ob = mapjoints(ob,iparent.parts(j).joints);
+                if ~isempty(iparent.parts(j).joints)
+                    %ob = mapjoints(ob,iparent.parts(j).joints);
+                    ob = mapjoints(asm,iparent.parts(j).joints);
+                end
                 parent = parent.addAssembly(ob);                
             elseif iparent.parts(j).getChildrenCount == 1                 
                 p = iparent.parts(j);
@@ -54,7 +60,9 @@ function [asm] = I_Assembly2Assembly(app,i_asm,classifyFlag)
                 ob = Component(app, p.name,s.material,processParameter);                        
                 ob.solidName = p.solids.name;
                 ob = mapfeatures(ob,iparent.parts(j).features);
-                ob = mapjoints(ob,iparent.parts(j).joints);
+                if ~isempty(iparent.parts(j).joints)
+                    ob = mapjoints(ob,iparent.parts(j).joints);                  
+                end                
                 parent = parent.addComponent(ob,app,classifyFlag);
             end               
         end  
@@ -85,33 +93,3 @@ function obj = mapfeatures(obj,features)
     end
 end
 
-function obj = mapjoints(obj,joints)
-% I_parts containing only one solid will be converted to Components, so 
-% in this case the mapping must be run for this component only
-
-% todo: in subasm suchen und kombination aus occ & body finden
-    if isa(obj,"Assembly")        
-        for j = 1:length(joints) 
-            nameBody = joints(j).body1;
-            nameOcc = joints(j).occ1;
-            %check if one joint partner is screw
-            if ~isempty(joints(j).screws)
-                charName = char(joints(j).occ1);
-                if strlength(joints(j).occ1) > 8 && charName(1) == '9'                    
-                    nameBody = joints(j).body2;                    
-                    nameOcc = joints(j).occ2;
-                end            
-            end                
-            for i = 1:length(obj.components)
-               if obj.components(i).solidName == nameBody && obj.name == nameOcc
-                  obj.components(i) = obj.components(i).addJoint(Joint.fromI_Joint(joints(j)));
-                  break                                                              
-               end
-            end   
-            for i = 1:length(obj.assemblies)
-                obj.assemblies(i) = mapjoints(obj.assemblies(i),joints(j));
-                
-            end
-        end                        
-    end
-end

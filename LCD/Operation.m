@@ -26,7 +26,7 @@ classdef Operation < handle & matlab.mixin.Copyable
             obj.processes = [obj.processes pro];
         end
         
-        function obj = displayOperation(obj,app)
+        function obj = plot(obj,app)
             g = digraph();
             if ~isempty(obj.processes)                
                 g = g.addnode(obj.processes(1).name);

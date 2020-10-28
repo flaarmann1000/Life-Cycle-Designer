@@ -9,18 +9,23 @@ classdef parserEngine
     
     %teststring "component.mass + asm.volume + 2 *3"
     methods
-        function [res] = run(obj,str)                          
-            
+        function [res] = run(obj,str)                                      
             chars = char(erase(str," ")); %get rid of spaces and convert to char array            
             opLookup = ['+','-','*','/','(',')'];
             buffer = [];            
             var = string.empty;
             operator = string.empty;
             i = 1;
+            newvar = true;
             while i  <= length(chars)                   
                 if sum( chars(i) == opLookup) == 0
                     buffer = [buffer chars(i)];                    
+                    newvar = false;
+                elseif chars(i) == '-' && newvar
+                    buffer = [buffer chars(i)];                    
+                    newvar = false;
                 elseif chars(i) == '('                                                                
+                    newvar = true;
                     open = 0;
                     for e = i+1:length(chars)                         
                         if chars(e) == '('
@@ -42,6 +47,7 @@ classdef parserEngine
                     end                                        
                     buffer = obj.run(subexpression);                    
                 else
+                    newvar = true;
                     operator(end+1) = string(chars(i));
                     var(end+1) = strtrim(string(buffer));                    
                     buffer = [];                    

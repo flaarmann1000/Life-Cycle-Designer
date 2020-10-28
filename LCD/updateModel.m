@@ -10,9 +10,9 @@ compareAsm(asm,activeAsm);
 
 waitbar(0.8,h,"Comparing Assemblies...");
 app.TV_Components.Children.delete;
-activeAsm.displayAssemblyTree(app.TV_Components,app.CB_ShowFeatures.Value)
+activeAsm.displayAssemblyTree(app,app.CB_ShowFeatures.Value)
 expand(app.TV_Components,'all');
-activeAsm.displayAssembly(app);
+activeAsm.plot(app);
 
 app.setTVSelection();
 

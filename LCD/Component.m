@@ -97,7 +97,7 @@ classdef Component < handle & matlab.mixin.Copyable
             end              
         end
         
-        function obj = displayComponent(obj,app)            
+        function obj = plot(obj,app)            
             
             %reset axis
             resetplotview(app.UIAxes);
@@ -264,7 +264,7 @@ classdef Component < handle & matlab.mixin.Copyable
         function obj = updateLifespans(obj)
             parentAsm = obj.parent;
             if ~isempty(parentAsm)
-                if parentAsm.processParameter.lifespan.value > obj.processParameter.lifespan.value
+                if parentAsm.processParameter.lifespan.value > obj.processParameter.lifespan.value                    
                     parentAsm.processParameter.lifespan.value = obj.processParameter.lifespan.value;
                     parentAsm.updateLifespans;
                 end
@@ -296,7 +296,7 @@ classdef Component < handle & matlab.mixin.Copyable
                 row = classificationTable(classificationTable.materialGroup == obj.materialGroup,:);
                 
                 if isempty(row)
-                    display(obj.material + " was not found");                    
+                    disp(obj.material + " was not found");                    
                     obj = obj.setMaterialGroup();
                     row = classificationTable(string(classificationTable.materialGroup) == obj.materialGroup,:);
                 end                                
@@ -334,12 +334,15 @@ classdef Component < handle & matlab.mixin.Copyable
                                 end
                             end
                         end
-                    elseif property1 == "JointType"
-                        if operator1 == "is"
-                            if ~isempty(obj.joints)
-                                if obj.joints(1).type == value1
-                                    flag = true;
-                                end
+                    elseif property1 == "JointType"                        
+                        if operator1 == "is"                            
+                            if ~isempty(obj.joints)                                
+                                for j = 1:length(obj.joints)                                    
+                                    if obj.joints(j).type == value1
+                                        flag = true;                                        
+                                    break
+                                    end
+                                end                                
                             end
                         end
                     elseif property1 == "Else"
@@ -394,8 +397,8 @@ classdef Component < handle & matlab.mixin.Copyable
                                 pro.quantityExpression = 0;
                             else
                                 %pro.quantity = obj.processParameter.(proConfig.parameter).value;                                
-                                pro.quantityExpression = proConfig.parameter;                                
-                                pro.quantity = parseQuantity(pro);                                
+                                pro.quantityExpression = proConfig.parameter;                                                                
+                                pro.quantity = pro.parseQuantity;                                
                             end
                             for a = 1:length(proConfig.alternativeProcesses)
                                 altpro = proConfig.alternativeProcesses(a);

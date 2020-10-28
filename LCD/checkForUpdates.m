@@ -21,7 +21,7 @@ if ~strcmp(txt,app.iteration)
         app.TV_Components.Children.delete;
         app.model.root.displayAssemblyTree(app.TV_Components,app.CB_ShowFeatures.Value)
         expand(app.TV_Components,'all');                
-        app.model.root.displayAssembly(app);
+        app.model.root.plot(app);
         app.activeElement = app.model.root;
         app.L_Navi.Text = app.activeElement.name + " (" + string(app.activeElement.generateLCIA(app)) +" "+ app.lciaUnit + ")";
         app.projectLoaded = true;

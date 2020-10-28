@@ -6,6 +6,8 @@ function xlsxImport(app)
 
 %profile on
 
+tic
+
 file = 'Bom.xlsx';
 path = 'C:\Users\Z420\Google Drive\circular economy\15 communication\lorenz\';
 
@@ -41,13 +43,15 @@ for i =1:length(assemblyNames)
             processParameter.mass.value = row.weight;            
             processParameter.density.value = app.materialProperties.Density(string(app.materialProperties.Material) == string(row.material));            
             processParameter.volume.value = processParameter.mass.value / processParameter.density.value;            
-            bx = processParameter.volume.value^(1/3);
-            by = processParameter.volume.value^(1/3);
-            bz = processParameter.volume.value^(1/3);
+            %assumption: part is is sphere shaped -> V = 4/3*pi*r^3
+            r = (3*processParameter.volume.value/(4*pi))^(1/3);
+            bx = 2*r;
+            by = 2*r;
+            bz = 2*r;
             processParameter.boundingBoxX.value = bx;
             processParameter.boundingBoxY.value = by;
             processParameter.boundingBoxZ.value = bz;
-            processParameter.surface.value = 2 * (bx*by + by*bz + bz*bx);
+            processParameter.surface.value = 4*pi*r^2;
             processParameter.paintMass.value = processParameter.surface.value / 16.5 * 1.1;
             if row.exchangable == "yes"
                 com.exchangable = true;
@@ -60,8 +64,8 @@ end
 waitbar(1,h,["displaying component..."]);
 
 app.model.root = root;
-root.displayAssemblyTree(app.TV_Components,false);
-root.displayAssembly(app);
+root.displayAssemblyTree(app,false);
+root.plot(app);
 app.activeElement = app.model.root;
 
 % --- generate hybridProcesses
@@ -81,14 +85,13 @@ for n = 1:length(names)
         iFlowTab = tab(tab.flowType == "intermediate",:);
         for i = 1:height(iFlowTab)            
             FlowName = iFlowTab.flowName(i);
-            Amount = string(iFlowTab.quantity(i));
+            QuantityExpression = string(iFlowTab.quantityExpression(i));
             Unit = iFlowTab.flowUnit(i);
-            ProviderName = iFlowTab.flowProvider(i);
+            Provider = iFlowTab.flowProvider(i);
             ProviderLoc = iFlowTab.flowProviderLoc(i);
-            row = table(FlowName,Amount,Unit,ProviderName,ProviderLoc);
+            row = table(FlowName,QuantityExpression,Unit,Provider,ProviderLoc);
             hyPro.intermediateFlowTable = [hyPro.intermediateFlowTable; row];
-        end       
-        hyPro.calculateLCIA(app);
+        end               
         stack = addToHyProStack(stack, hyPro, replace);
     end
 end
@@ -105,25 +108,32 @@ for i = 1:height(overwritesTable)
     stage = com.stages(string({com.stages.name}) == overwritesTable.stageId(i));
     op = stage.operations(string({stage.operations.name}) == overwritesTable.operation(i));
     if isempty(op)
-        op = Operation(overwritesTable.operation(i));
+        op = Operation(string(overwritesTable.operation(i)));
         stage.addOperation(op);
     end
     if overwritesTable.processType(i) == "hybridProcess"
         original = stack(string({stack.name})' == overwritesTable.Name(i));
         pro = copy(original);
+        pro.id = string(java.util.UUID.randomUUID);
+        op.addProcess(pro);
+        pro.calculateLCIA(app);
     else
         name = overwritesTable.Name(i);
         loc = overwritesTable.Loc(i);
         product = overwritesTable.Product(i);
         pro = app.processEngine.getProcess(app,name,loc,product);
-    end
+        pro.alternativeProcesses = pro;
+        op.addProcess(pro);
+    end    
     pro.quantityExpression = overwritesTable.quantityExpression(i);
-    op.addProcess(pro);
 end
 
-
+app.projectLoaded = true;
+app.L_RefTime.Text = "reference time: " + app.options.referenceTime + " yr";
 
 close(h); 
+
+toc
 
 %profile viewer
 
@@ -137,14 +147,11 @@ close(h);
         end
         asm = Assembly(name);
        if (~sum((name ~= string(bomTable.assembly)) & (string(bomTable.assembly) == string(bomTable.assemblyParent))) && (sum(name == string(bomTable.assemblyParent)) > 0))       
-           root = asm;           
-           disp(asm.name + ' is root');
+           root = asm;                      
        else
            res = bomTable.assemblyParent(bomTable.assembly == name);           
            asm.parent = getAsm(res(1));
-           asm.parent.addAssembly(asm);
-           disp('added ' + asm.name + " to " + asm.parent.name);
-           disp(length(asm.parent.assemblies));
+           asm.parent.addAssembly(asm);                      
        end
        asmList = [asmList asm];
     end       

@@ -12,8 +12,8 @@ classdef HybridProcess < Process
         quantity double = 1
         quantityExpression string     
         
-        intermediateFlowTable table %containing flowName | Amount | Unit | ProviderName | ProviderLoc
-        elementaryFlowTable table %containing flowName | Amount | Unit | ID
+        intermediateFlowTable table %containing flowName | QuantityExpression | Unit | Provider | ProviderLoc
+        elementaryFlowTable table %containing flowName | QuantityExpression | Unit | ID
                                 
         htotal %impact vector
         stotal %intermediate flows
@@ -40,9 +40,11 @@ classdef HybridProcess < Process
             n = length(app.A_inv);
             f = zeros(n,1);
             for i = 1:height(obj.intermediateFlowTable)                
-                ifRow = obj.intermediateFlowTable(i,:);
-                row = app.ie( (string(app.ie.activityName) == string(ifRow.ProviderName)) & (string(app.ie.geography) == string(ifRow.ProviderLoc)) & (string(app.ie.product) == string(ifRow.FlowName)),:);                 
-                f(row.index+1) = str2double(ifRow.Amount);                
+                ifRow = obj.intermediateFlowTable(i,:);                
+                row = app.ie( (string(app.ie.activityName) == string(ifRow.Provider)) & (string(app.ie.geography) == string(ifRow.ProviderLoc)) & (string(app.ie.product) == string(ifRow.FlowName)),:);                 
+                %disp(ifRow);                
+                f(row.index+1) = obj.parseQuantity(string(ifRow.QuantityExpression));
+                %f(row.index+1) = str2double(ifRow.Amount);                
             end
             
             h = app.C * f;
@@ -52,7 +54,8 @@ classdef HybridProcess < Process
             
             for i = 1:height(obj.elementaryFlowTable)
                 row = app.ee( (string(app.ee.name) == string(obj.elementaryFlowTable.FlowName(i))) &( string(app.ee.compartment) == string(obj.elementaryFlowTable.Compartment(i))) & (string(app.ee.subcompartment) == string(obj.elementaryFlowTable.Subcompartment(i))),:);
-                g(row.index+1) = str2double(obj.elementaryFlowTable.Amount(i));
+                %g(row.index+1) = str2double(obj.elementaryFlowTable.Amount(i));
+                g(row.index+1) = obj.parseQuantity(string(obj.elementaryFlowTable.QuantityExpression));
             end
             
             obj.htotal = h + app.Q * g;               
@@ -61,31 +64,30 @@ classdef HybridProcess < Process
         function impact = generateLCIA(obj,app)
             lciaIndex = app.lciaIndex;
             rate = obj.getRateEff(app);
-            obj.quantity = parseQuantity(obj);
+            obj.quantity = obj.parseQuantity(obj.quantityExpression);
             if app.options.normTime
                 norm = app.options.referenceTime;
             else
                 norm = 1;
-            end
-            
+            end            
             impact = obj.htotal(lciaIndex+1)* obj.quantity * rate / norm;
         end
         
-        function addIntermediateFlow(obj,FlowName, Amount, Unit, Provider, ProviderLoc)
-            row = table(FlowName, Amount, Unit, Provider, ProviderLoc);
+        function addIntermediateFlow(obj,FlowName, QuantityExpression, Unit, Provider, ProviderLoc)
+            row = table(FlowName, QuantityExpression, Unit, Provider, ProviderLoc);
             obj.intermediateFlowTable = [obj.intermediateFlowTable; row];
         end
         
-        function addElementaryFlow(obj,FlowName, Amount, Unit, Compartment, Subcompartment)
+        function addElementaryFlow(obj,FlowName, QuantityExpression, Unit, Compartment, Subcompartment)
             Compartment = string(Compartment);
             Subcompartment = string(Subcompartment);
-            row = table(FlowName, Amount, Unit, Compartment, Subcompartment);
+            row = table(FlowName, QuantityExpression, Unit, Compartment, Subcompartment);
             obj.elementaryFlowTable = [obj.elementaryFlowTable; row];
         end
         
         
         
-        function quantity = parseQuantity(obj)
+        function quantity = parseQuantity(obj,expression)
                         
             parameter = obj.parent.parent.parent.processParameter;            
             
@@ -110,17 +112,17 @@ classdef HybridProcess < Process
                 pe = parserEngine();
                 pe.dicNames = [dicNames];
                 pe.dicValues = [dicValues];
-            end
-            quantity = pe.run(obj.quantityExpression);
+            end           
+            quantity = pe.run(expression);
         end
         
         
-        function displayProcess(obj,app,axes)
+        function plot(obj,app,axes)                        
                                     
             obj.generateGraph(app);
             
             rate = obj.getRateEff(app);            
-            obj.quantity = parseQuantity(obj);
+            obj.quantity = obj.parseQuantity(obj.quantityExpression);
             if app.options.normTime
                 norm = app.options.referenceTime;
             else
@@ -181,7 +183,7 @@ classdef HybridProcess < Process
             
             for a = 1:height(obj.intermediateFlowTable)                                
                 t = obj.intermediateFlowTable(a,:);                                    
-                flowIndex = getFlowIndex(app,t.ProviderName,t.FlowName,t.ProviderLoc);                                
+                flowIndex = getFlowIndex(app,t.Provider,t.FlowName,t.ProviderLoc);                                
                 Amount = obj.stotal(flowIndex+1);                              
                 f = zeros(n,1);
                 f(flowIndex+1) = Amount;

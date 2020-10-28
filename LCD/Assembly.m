@@ -8,7 +8,7 @@ classdef Assembly < handle & matlab.mixin.Copyable
         name string
         components Component
         assemblies Assembly
-        modelGraph        
+        modelGraph
         ignore = false
         
         processParameter
@@ -20,27 +20,27 @@ classdef Assembly < handle & matlab.mixin.Copyable
         function obj = Assembly(name)
             obj.name = name;
             obj.id = java.util.UUID.randomUUID.toString;
-                        
+            
             EL = [1 2;2 3;3 4;4 5;5 6;5 7;5 8;5 9;5 10;7 5;8 4;9 3;11,2];
             g = digraph(EL(:,1),EL(:,2));
             obj.modelGraph = g;
-            %obj.stageNames = ["material","production","assembly","distribution","use","disposal","maintenance","refurbishment","remanufacturing","recycling"];stager           
+            %obj.stageNames = ["material","production","assembly","distribution","use","disposal","maintenance","refurbishment","remanufacturing","recycling"];stager
             obj.processParameter.lifespan.value = 99999;
             obj.processParameter.lifespan.dependant = false;
         end
         
-        function obj = addComponent(obj, com, app, classifyFlag)           
-            com.parent = obj;   
+        function obj = addComponent(obj, com, app, classifyFlag)            
+            com.parent = obj;
             if classifyFlag
                 com.assignComponentType(app);
                 com.updateLifespans;
-            end            
+            end
             obj.components(length(obj.components)+1) = com;
         end
         
-        function obj = addAssembly(obj, asm)            
+        function obj = addAssembly(obj, asm)
             asm.parent = obj;
-            asm.updateLifespans;
+            %obj.updateLifespans;
             obj.assemblies(length(obj.assemblies)+1) = asm;
         end
         
@@ -95,7 +95,8 @@ classdef Assembly < handle & matlab.mixin.Copyable
             end
         end
         
-        function displayAssemblyTree(asm,tree,showFeatures)
+        function displayAssemblyTree(asm,app,showFeatures)            
+            tree = app.TV_Components;            
             %displays Assembly in TreeView
             tree.Children.delete;
             NodeData.name = asm.name;
@@ -115,8 +116,11 @@ classdef Assembly < handle & matlab.mixin.Copyable
                     NodeData.classification = obj.components(i).classification;
                     if obj.components(i).ignore
                         c = uitreenode(parent,'Text',obj.components(i).name,'NodeData',NodeData, "Icon", "res\disenabled.png");
-                    else                    
+                        c.ContextMenu = app.CM_tree;
+                        
+                    else
                         c = uitreenode(parent,'Text',obj.components(i).name,'NodeData',NodeData, "Icon", "res\part.png");
+                        c.ContextMenu = app.CM_tree;
                     end
                     
                     if showFeatures
@@ -136,19 +140,20 @@ classdef Assembly < handle & matlab.mixin.Copyable
                     NodeData.name = obj.assemblies(i).name;
                     NodeData.id= obj.assemblies(i).id;
                     p = uitreenode(parent,'Text',obj.assemblies(i).name,'NodeData',NodeData, "Icon", "res\asm.png");
+                    p.ContextMenu = app.CM_tree;
                     iterate(p,obj.assemblies(i));
                 end
             end
         end
         
-        function obj = displayAssembly(obj,app)                        
+        function obj = plot(obj,app)                        
             
-            %reset axis                        
+            %reset axis
             resetplotview(app.UIAxes);
             axis(app.UIAxes,"fill");
             app.UIAxes.DataAspectRatio = [1 1 1];
-            app.UIAxes.Toolbar.Visible = 'off';            
-            disableDefaultInteractivity(app.UIAxes);                                   
+            app.UIAxes.Toolbar.Visible = 'off';
+            disableDefaultInteractivity(app.UIAxes);
             
             
             XData = [20,40,60,80,100,120,100,80,60,120,40];
@@ -178,8 +183,8 @@ classdef Assembly < handle & matlab.mixin.Copyable
             im  = scatter(app.UIAxes,h.XData, h.YData,[], col, 'filled','SizeData',impactsNorm,'PickableParts' , 'none');
             alpha(im,.2)
             hold(app.UIAxes,"off");
-                        
-            text(app.UIAxes, h.XData(1:6), h.YData(1:6)-6 ,app.stageNames(1:6),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')            
+            
+            text(app.UIAxes, h.XData(1:6), h.YData(1:6)-6 ,app.stageNames(1:6),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')
             text(app.UIAxes, h.XData(7:11), h.YData(7:11)+5.5 ,app.stageNames(7:11),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')
             
             
@@ -195,15 +200,15 @@ classdef Assembly < handle & matlab.mixin.Copyable
                 text(app.UIAxes, h.XData(1:6), h.YData(1:6)-8 ,string(round(impacts(1:6),2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
                 text(app.UIAxes, h.XData(7:11), h.YData(7:11)+3.5 ,string(round(impacts(7:11),2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
             end
-                       
-            app.mode = 'Assembly';                        
+            
+            app.mode = 'Assembly';
         end
         
         function [total, vector] = generateLCIA(obj,app)
             if ~obj.ignore
                 vector = zeros(length(app.stageNames),1);
                 for e = 1:length(obj.components)
-                    [~ , compVector] = obj.components(e).generateLCIA(app);                    
+                    [~ , compVector] = obj.components(e).generateLCIA(app);
                     vector = vector + compVector;
                 end
                 
@@ -252,7 +257,7 @@ classdef Assembly < handle & matlab.mixin.Copyable
                             asm.components(i).rates = app.activeElement.rates;
                             asm.components(i) = asm.components(i).updateMass();
                             asm.components(i) = asm.components(i).generateStages(app);
-                            asm.components(i).displayComponent(app);
+                            asm.components(i).plot(app);
                         end
                         return
                     end
@@ -325,9 +330,9 @@ classdef Assembly < handle & matlab.mixin.Copyable
             
             if app.options.normTime
                 app.stageId
-                app.L_Navi.Text = app.activeElement.name + " / " + app.stageNames(app.stageId) + " (" + string(round(sum(values),2)) +" "+ app.lciaUnit + " / yr)";
-            else                
-                app.L_Navi.Text = app.activeElement.name + " / " + app.stageNames(app.stageId) + " (" + string(round(sum(values),2)) +" "+ app.lciaUnit + ")";
+                app.L_Navi.Text = app.activeElement.name + " / " + app.stageNames(stageId) + " (" + string(round(sum(values),2)) +" "+ app.lciaUnit + " / yr)";
+            else
+                app.L_Navi.Text = app.activeElement.name + " / " + app.stageNames(stageId) + " (" + string(round(sum(values),2)) +" "+ app.lciaUnit + ")";
             end
             
             s.value = values';
@@ -335,10 +340,10 @@ classdef Assembly < handle & matlab.mixin.Copyable
             t = struct2table(s);
             t = sortrows(t,'value','descend');
             values = t.value;
-            names = t.name;                        
+            names = t.name;
             
-            %mymap = [linspace(242,242,100)', linspace(173,240,100)', linspace(177,173,100)']/255;            
-            mymap = [linspace(242,220,100)', linspace(173,245,100)', linspace(177,250,100)']/255;                        
+            %mymap = [linspace(242,242,100)', linspace(173,240,100)', linspace(177,173,100)']/255;
+            mymap = [linspace(242,220,100)', linspace(173,245,100)', linspace(177,250,100)']/255;
             
             colormap(app.UIAxes,mymap )
             p = pie(app.UIAxes,values./sum(values));
@@ -374,9 +379,9 @@ classdef Assembly < handle & matlab.mixin.Copyable
             end
         end
         
-        function obj = updateLifespans(obj)         
-            %checks wether obj lifespan is shorten than it's parent            
-            parentAsm = obj.parent;            
+        function obj = updateLifespans(obj)
+            %checks wether obj lifespan is shorten than it's parent
+            parentAsm = obj.parent;
             if ~isempty(parentAsm)
                 if parentAsm.processParameter.lifespan.value > obj.processParameter.lifespan.value
                     parentAsm.processParameter.lifespan.value = obj.processParameter.lifespan.value;
@@ -388,7 +393,7 @@ classdef Assembly < handle & matlab.mixin.Copyable
         function obj = checkLifespans(obj)
             %checks wether obj's lifespan is still defined by it's shortest
             % inexchangable children
-                       
+            
             obj.processParameter.lifespan.value = 99999;
             
             for i = 1:length(obj.components)
@@ -406,10 +411,17 @@ classdef Assembly < handle & matlab.mixin.Copyable
                         obj.parent.checkLifespans;
                     end
                 end
-            end            
+            end
         end
-                
+        
+        
+        function obj = setLifespans(obj)
+            for a = 1:length(obj.assemblies)
+                obj.assemblies(a).checkLifespans;
+                obj.assemblies(a).setLifespans;
+            end
+        end
+        
     end
-    
 end
 
