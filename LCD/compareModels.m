@@ -2,6 +2,7 @@ function compareModels(app)
 %compareModels Compares Model with Reference Model
 obj = app.model.root;
 
+
 XData = [20,40,60,80,100,120,100,80,60,120,40];
             YData = [20,20,20,20, 20, 20, 40, 40,40,40,40];
             NodeColors = [247 182 137;247 182 137;247 182 137;247 182 137; 105 176 226; 244 136 136;161 208 168;189 205 161;211 200 154;231 193 146; 247 182 137]/255;
@@ -48,14 +49,17 @@ end
 text(app.UIAxes, h.XData(1:6), h.YData(1:6)-6 ,app.stageNames(1:6),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')
 text(app.UIAxes, h.XData(7:11), h.YData(7:11)+5.5 ,app.stageNames(7:11),'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 18, 'Color', [.3 .3 .35], 'FontWeight','normal')
 
+sign = strings(length(impacts),1);
+sign(impacts > 0) = "+";
+
 if app.options.normTime
     app.L_Navi.Text = obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + " / yr)";
-    text(app.UIAxes, h.XData(1:6), h.YData(1:6)-8 ,string(round(impacts(1:6),2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
-    text(app.UIAxes, h.XData(7:11), h.YData(7:11)+3.5 ,string(round(impacts(7:11),2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+    text(app.UIAxes, h.XData(1:6), h.YData(1:6)-8 ,sign(1:6) + string(round(impacts(1:6),2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+    text(app.UIAxes, h.XData(7:11), h.YData(7:11)+3.5 ,sign(7:11) + string(round(impacts(7:11),2)) + " " + app.lciaUnit + ' / yr','VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
 else
     app.L_Navi.Text = obj.name + " (" + string(round(obj.generateLCIA(app),2)) +" "+ app.lciaUnit + ")";
-    text(app.UIAxes, h.XData(1:6), h.YData(1:6)-8 ,string(round(impacts(1:6),2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
-    text(app.UIAxes, h.XData(7:11), h.YData(7:11)+3.5 ,string(round(impacts(7:11),2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+    text(app.UIAxes, h.XData(1:6), h.YData(1:6)-8 ,sign(1:6) + string(round(impacts(1:6),2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
+    text(app.UIAxes, h.XData(7:11), h.YData(7:11)+3.5 ,sign(7:11) + string(round(impacts(7:11),2)) + " " + app.lciaUnit,'VerticalAlignment','bottom', 'HorizontalAlignment', 'center', 'FontSize', 14, 'Color', [.6 .6 .7], 'FontWeight','normal')
 end
 
 end

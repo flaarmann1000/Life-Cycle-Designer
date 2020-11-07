@@ -13,7 +13,7 @@ text(axes, ones(length(h.XData),1).*-0.5, h.XData ,names ,"FontSize",12,"Color",
 if app.options.normTime
     text(axes, ones(length(h.XData),1).*-0.5, h.XData ,string(results) + " " + string(app.lciaUnit + " / yr") ,"FontSize",12,"Color", [255 170 170]/255,'HorizontalAlignment', 'right','VerticalAlignment','top','FontWeight',"normal");
 else
-    text(axes, ones(length(h.XData),1).*-0.5, h.XData ,string(results) + " " + string(app.lciaUnitD) ,"FontSize",12,"Color", [255 170 170]/255,'HorizontalAlignment', 'right','VerticalAlignment','top','FontWeight',"normal");
+    text(axes, ones(length(h.XData),1).*-0.5, h.XData ,string(results) + " " + string(app.lciaUnit) ,"FontSize",12,"Color", [255 170 170]/255,'HorizontalAlignment', 'right','VerticalAlignment','top','FontWeight',"normal");
 end
 
 legend(axes,'off')

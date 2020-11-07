@@ -1,15 +1,15 @@
 function xlsxImport(app)
 
 %default = "C:\Users\Z420\Google Drive\circular economy\15 communication\lorenz\*.xlsx";
-%default = "*.xlsx";
-%[file,path] = uigetfile(default,'Select an xlsx-File');
+default = "*.xlsx";
+[file,path] = uigetfile(default,'Select an xlsx-File');
 
 %profile on
 
 tic
 
-file = 'Bom.xlsx';
-path = 'C:\Users\Z420\Google Drive\circular economy\15 communication\lorenz\';
+%file = 'Bom.xlsx';
+%path = 'C:\Users\Z420\Google Drive\circular economy\15 communication\lorenz\';
 
 %file = 'xlsBom.xlsx';
 %path = '';
