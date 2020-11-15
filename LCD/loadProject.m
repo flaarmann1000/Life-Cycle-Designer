@@ -8,6 +8,8 @@ if isequal(file,0) || isequal(path,0)
     return
 end
 
+tic
+
 h = waitbar(0.1,'loading...');
 
 app.options = options;
@@ -30,7 +32,7 @@ app.L_Mode.Text = lower(app.mode);
 app.L_RefTime.Text = "reference time: " + app.options.referenceTime + " yr";
 app.setTVSelection();
 
-
+toc
 disp("done");
 
     function getChildren(asm)

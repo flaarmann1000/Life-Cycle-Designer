@@ -22,14 +22,14 @@ for c = 1:length(classificationType)
         end
         list = {unique(list)};        
         classifications(i) = list;
-    end
-        
+    end       
     
     save(classificationType(c)+"ClassificationList.mat",'classifications');
     disp(classificationType(c)+" exported");
 
 end
 
+%%
 % run first to create stack
 
 stack = ConfigProcessDealer();

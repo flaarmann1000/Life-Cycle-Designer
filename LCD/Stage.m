@@ -71,7 +71,7 @@ classdef Stage < handle & matlab.mixin.Copyable
         
         function obj = addOperation(obj, op)
             op.parent = obj;
-            obj.operations = [obj.operations op];
+            obj.operations = [obj.operations op];            
         end           
         
     end

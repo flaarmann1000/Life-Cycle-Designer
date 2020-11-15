@@ -14,6 +14,7 @@ classdef Component < handle & matlab.mixin.Copyable
         material string
         materialGroup string
         %surface double
+        quantity double = 1; %quantity of components in assembly
         
         compatibility
         compatibilityStatus double = 1 % can be -1,0,1 == incompatible - possibly incompatible - compatible with assembly
@@ -182,7 +183,8 @@ classdef Component < handle & matlab.mixin.Copyable
             app.DD_MaterialGroup.Items = cellstr(app.materialGroupList);            
             app.DD_MaterialGroup.Value = string(obj.materialGroup);
             app.listMaterials(string(obj.materialGroup));                     
-            app.DD_Material.Value = string(obj.material);                                    
+            app.DD_Material.Value = string(obj.material);   
+            app.S_quantity.Value = obj.quantity;
             
             app.E_Mass.Value = double(obj.processParameter.mass.value);
             app.E_Volume.Value = double(obj.processParameter.volume.value);
@@ -219,7 +221,7 @@ classdef Component < handle & matlab.mixin.Copyable
                 vector = zeros(length(obj.stages),1);
                 total = 0;
                 for i = 1:length(obj.stages)
-                    impact = obj.stages(i).generateLCIA(app);
+                    impact = obj.stages(i).generateLCIA(app)*obj.quantity;
                     total = total + impact;
                     vector(i) = impact;
                 end
